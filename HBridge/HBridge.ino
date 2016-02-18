@@ -1,24 +1,25 @@
 #include <IRremote.h>
 
-const int AIN1_P5 = 5;
-const int AIN2_P6 = 6;
-const int BIN1_P10 = 2;
-const int BIN2_P11 = 3;
-const int RECV_PIN = 10;
 
+const int RECV_PIN = 2;
 volatile int READ_IR = 0;
 
 IRrecv irrecv(RECV_PIN);
 decode_results IR_VALUE;
 
+//Port registers are big endian (Pins 7 to 0) ie 10000000 sets 7 on and all the rest off.
 void setup() 
 {
-  pinMode(AIN1_P5, OUTPUT);
-  pinMode(AIN2_P6, OUTPUT);
-  pinMode(BIN1_P10, OUTPUT);
-  pinMode(BIN2_P11, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(RECV_PIN), handleIR, RISING);
-  irrecv.enableIRIn(); // Start the receiver
+    /*
+    The choice of PORTH takes away (I believe) some of the available clock pins, if we need more clock pins. 
+    We can consider moving this to another port. Im not sure if we need the pins (looks like theyre for pwm output with the clock)
+    to use the timer as a raw timer (to trigger sensor reading interrupts).
+    */
+    //Set the data direction register (DDRx) of B
+    DDRH = B01111010; // This sets digital pins 9,8,7,6 to output For our motors. Tx pin 16 also output. 
+    PORTH &= B10000111;
+    attachInterrupt(digitalPinToInterrupt(RECV_PIN), handleIR, RISING);
+    irrecv.enableIRIn(); // Start the receiver
 }
 
 //Could deffinitely try tweaking the delays by an offset to compensate for function overhead (thus reducing drift caused by motors)
@@ -33,13 +34,11 @@ void pwmToMotor(unsigned int frequency, float percentDutyA, float percentDutyB)
         unsigned int secondDelay = (percentDutyA * time) - firstDelay;
         unsigned int timeRemaining = (time - firstDelay) - secondDelay;
 
-        //TODO Consider making this a function. Is the overhead worth the reuse?
-        digitalWrite(AIN1_P5, HIGH);
-        digitalWrite(BIN1_P10, HIGH);
+        PORTH |= B00101000; //Pulse on Pins 8, 6
         delayMicroseconds(firstDelay);
-        digitalWrite(BIN1_P10, LOW);
-        delayMicroseconds(secondDelay);    
-        digitalWrite(AIN1_P5, LOW);
+        PORTH &= B11011111; //Turn off pin 8
+        delayMicroseconds(secondDelay);
+        PORTH &= B11110111; //Turn off pin 6
         delayMicroseconds(timeRemaining);
     }
     else //PercentB >= PercentA
@@ -48,22 +47,20 @@ void pwmToMotor(unsigned int frequency, float percentDutyA, float percentDutyB)
         unsigned int secondDelay = (percentDutyB * time) - firstDelay;
         unsigned int timeRemaining = (time - firstDelay) - secondDelay;
 
-        //TODO Consider making this a function. Is the overhead worth the reuse?
-        digitalWrite(AIN1_P5, HIGH);
-        digitalWrite(BIN1_P10, HIGH);
+        PORTH |= B00101000; //Pulse on Pins 8, 6
         delayMicroseconds(firstDelay);
-        digitalWrite(AIN1_P5, LOW);
+        PORTH &= B11110111; //Turn off pin 6
         delayMicroseconds(secondDelay); 
-        digitalWrite(BIN1_P10, LOW);
+        PORTH &= B11011111; //Turn off pin 8
         delayMicroseconds(timeRemaining);
     }
 }
 
 void driveForward(unsigned int frequency, float percentDutyA, float percentDutyB)
 {
-  digitalWrite(AIN2_P6, LOW); 
-  digitalWrite(BIN2_P11, LOW); 
-  pwmToMotor(frequency, percentDutyA, percentDutyB);
+    // Clear 9-6
+    PORTH &= B10000111;
+    pwmToMotor(frequency, percentDutyA, percentDutyB);
 }
 
 void handleIR()
@@ -96,19 +93,32 @@ void loop()
     
     if(driveMotor)
     {
-        for(int i = 0; i < 200; i++)
+      /*
+        for(int i = 0; i < 500; i++)
         {
             driveForward(1000, 0.2, 0.2);
+        }*/
+        
+        for(int i = 0; i < 500; i++)
+        {
+            driveForward(1000, 0.30, 0);
+        }
+        
+        for(int i = 0; i < 500; i++)
+        {
+            driveForward(1000, 0, 0.30);
         }
     }
 
-    digitalWrite(AIN1_P5, LOW); 
-    digitalWrite(AIN2_P6, LOW); 
-    digitalWrite(BIN1_P10, LOW); 
-    digitalWrite(BIN2_P11, LOW); 
+    PORTH &= B10000111;
 
     while(true)
     {
       delay(1000);
     }
 }
+
+
+
+
+
