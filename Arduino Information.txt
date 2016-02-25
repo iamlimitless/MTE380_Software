@@ -1,0 +1,19 @@
+Arduino Information
+
+// To link files as C must use extern command.
+
+Digital Pins Useable for Interrupt 2, 3, 18, 19, 20, 21
+
+Calling PINx (where x is the port we configured) will give us the binary representation of the bins on the port ex 11110000 means the first 4 pins 7-4 are high 3-0 are low. 
+
+Arduino AtMega2560 has 6 available timers, (two 8 bit, four 16 bit). Processor and clock at 16MHz
+
+It looks like the servo library uses timer 5 (for the first 12 servos, make sure we set this value to low so we don't conflict multiple timers)
+
+CTC timer mode can be used to trigger an interrupt whenever the timer reaches a certain counter value. 
+
+use PORTA for proximity sensors
+
+Dedicate an interrupt line for accelerometer
+
+I2C - Needs PORTD 

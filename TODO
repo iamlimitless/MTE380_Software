@@ -1,0 +1,18 @@
+Main Project Skeleton (write the functions out based on the state diagram)
+	- Files: State.h, State.cpp, Motors.h, Motors.cpp, ProximityIR.h, ProximityIR.cpp, DistanceIR.h, DistanceIR.cpp, 
+
+Motor Controller
+	- Data Structure Design
+	- Control Functions (Global or pass by reference?)
+	- Implementation (Must be able to handle multiple duty cycles and directions)
+
+IR Proximity Sensor Controller
+
+Ramp Following Algorithm
+Turning Algorithm
+Drive Straight Algorithm
+IR Distance Sensor Controller
+Determine whether or not we need to modify the ultrasonic code.
+Search Drift Control Algorithm
+Start up sequence
+Each States Implementation

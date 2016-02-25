@@ -1,0 +1,7 @@
+Detailed Sensor Information
+
+Accelerometer:
+
+Can trigger an interrupt whenever the accelerometer experiences large orientation changes. We should try to do this using tap detection interrupts
+
+Write an accelerometerSetup() fn that sets up the interupts and the scaling values for testing.
