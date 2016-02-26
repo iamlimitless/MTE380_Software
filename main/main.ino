@@ -1,10 +1,16 @@
 #include "State.h"
+#include "Motor.h"
 
-void setup() {
-  // put your setup code here, to run once:
 
+void setup() 
+{
+	SetupMotors();
 }
 
-void loop() {
-  int val = FunctionCall();
+void loop() 
+{
+	MotorDrive* motors = InitMotorDrive();
+	
+	CleanupMotorDrive(motors);
+	while(1);
 }

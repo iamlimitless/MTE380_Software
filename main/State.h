@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-int FunctionCall();
 
 
 #ifdef __cplusplus
