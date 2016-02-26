@@ -36,7 +36,7 @@ void MotorsOff()
     PORTH &= B10000111;
 }
 
-void DriveForward(MotorDrive* motor, MotorDirection direction)
+void DriveStraight(MotorDrive* motor, MotorDirection direction)
 {
     // Clear Pins 9-6
     PORTH &= B10000111;
@@ -63,11 +63,11 @@ void DriveForward(MotorDrive* motor, MotorDirection direction)
         unsigned int firstDelay = motor->motorBDutyCycle * time;
         unsigned int secondDelay = (motor->motorADutyCycle * time) - firstDelay;
         unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= B00101000; //Pulse on Pins 8, 6
+        PORTH |= pulseBoth; //Pulse on Pins 8, 6 if forward, 9,7 if reverse
         delayMicroseconds(firstDelay);
-        PORTH &= disableB; //Turn off pin 8
+        PORTH &= disableB; //Turn off pin 8, or 9 if reverse
         delayMicroseconds(secondDelay);
-        PORTH &= disableA; //Turn off pin 6
+        PORTH &= disableA; //Turn off pin 6 or 7 if reverse
         delayMicroseconds(timeRemaining);
     }
     else //PercentB >= PercentA
@@ -75,11 +75,11 @@ void DriveForward(MotorDrive* motor, MotorDirection direction)
         unsigned int firstDelay = motor->motorADutyCycle * time;
         unsigned int secondDelay = (motor->motorBDutyCycle * time) - firstDelay;
         unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 8, 6
+        PORTH |= pulseBoth; //Pulse on Pins 8, 6 if forward, 9,7 if reverse
         delayMicroseconds(firstDelay);
-        PORTH &= disableA; //Turn off pin 6
+        PORTH &= disableA; //Turn off pin 6 or 7 if reverse
         delayMicroseconds(secondDelay); 
-        PORTH &= disableB; //Turn off pin 8
+        PORTH &= disableB; //Turn off pin 8 or 9 if reverse
         delayMicroseconds(timeRemaining);
     }
 

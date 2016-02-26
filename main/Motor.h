@@ -18,6 +18,8 @@ typedef enum MotorDirection
 } MotorDirection;
 
 typedef struct MotorDrive 
+
+
 {
 	float motorADutyCycle;
 	float motorBDutyCycle;
@@ -31,7 +33,7 @@ void UpdateMotors(MotorDrive* motor, float dutyA, float dutyB);
 
 void MotorsOff();
 
-void DriveForward(MotorDrive* motor, MotorDirection direction);
+void DriveStraight(MotorDrive* motor, MotorDirection direction);
 
 void TurnLeft(MotorDrive* motor);
 
