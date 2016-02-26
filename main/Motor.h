@@ -18,8 +18,6 @@ typedef enum MotorDirection
 } MotorDirection;
 
 typedef struct MotorDrive 
-
-
 {
 	float motorADutyCycle;
 	float motorBDutyCycle;
