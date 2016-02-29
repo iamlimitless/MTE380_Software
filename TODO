@@ -1,18 +1,34 @@
-Main Project Skeleton (write the functions out based on the state diagram)
-	- Files: State.h, State.cpp, Motors.h, Motors.cpp, ProximityIR.h, ProximityIR.cpp, DistanceIR.h, DistanceIR.cpp, 
-
-Motor Controller
-	- Data Structure Design
-	- Control Functions (Global or pass by reference?)
-	- Implementation (Must be able to handle multiple duty cycles and directions)
-
-IR Proximity Sensor Controller
-
+//Blocked waiting for motor
 Ramp Following Algorithm
-Turning Algorithm
+	- Tune the controller for up the ramp
+	- Finish implementing Down the ramp and flat
+
+//Blocked waiting for motors
+//Blocked waiting on ultrasonic mount
 Drive Straight Algorithm
+	- Tune the ultrasonic values to correct Course
+
+//Blocked waiting for motors
+//Blocked waiting on ultrasonic mount
+Turning Algorithm
+	- Tune IR Distance Turns
+	- Turn Ultrasonic Turns and filtering
+
+// Do something so that we start the motors high and settle so there is no initial stalling. Is this really necessary?
+
+Change things to use the pulse generator
+
 IR Distance Sensor Controller
-Determine whether or not we need to modify the ultrasonic code.
+	- Drive Straight Algorithm
+	- How we are weaving this in with turning
+
 Search Drift Control Algorithm
+	- Design and implement
+
+Acceleromter
+	- Tune Accelerometer interrupt
+
 Start up sequence
-Each States Implementation
+	- Give this some thought
+
+Try to inline all functions

@@ -1,0 +1,503 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"pre",
+				"previousSensorReading"
+			],
+			[
+				"P",
+				"PLAYER_TWO	(PigGame.h)"
+			],
+			[
+				"Op",
+				"OptimalPlayer"
+			],
+			[
+				"Pl",
+				"PLAYER_ONE"
+			],
+			[
+				"Ro",
+				"RollToTwentyPlayer"
+			],
+			[
+				"R",
+				"RollToTwentyPlayer"
+			],
+			[
+				"m_p",
+				"m_p2Score"
+			],
+			[
+				"m_",
+				"m_turn"
+			],
+			[
+				"C",
+				"ClearScores"
+			],
+			[
+				"ope",
+				"opponentScore"
+			],
+			[
+				"PLAYER_",
+				"PLAYER_H"
+			],
+			[
+				"Pig",
+				"PigGame"
+			],
+			[
+				"Rol",
+				"RollTenPlayer	(Player.h)"
+			],
+			[
+				"m_p2",
+				"m_p2Score"
+			],
+			[
+				"turn",
+				"turnScore"
+			],
+			[
+				"PL",
+				"PLAYER_ONE	(PigGame.h)"
+			],
+			[
+				"Pi",
+				"PigGame"
+			],
+			[
+				"m_1",
+				"m_p1	(PigGame.h)"
+			],
+			[
+				"std",
+				"std::endl"
+			],
+			[
+				"GetN",
+				"GetNumTosses	(CoinPredictor.h)"
+			],
+			[
+				"Get",
+				"GetProbability"
+			],
+			[
+				"pred",
+				"prediction"
+			],
+			[
+				"st",
+				"std::cout"
+			],
+			[
+				"Coin",
+				"CoinPredictor	(CoinPredictor.h)"
+			],
+			[
+				"m_num",
+				"m_numTosses"
+			],
+			[
+				"m_nu",
+				"m_numHeads	(CoinTosser.cpp)"
+			],
+			[
+				"re",
+				"result"
+			],
+			[
+				"W",
+				"WeightedTosser"
+			],
+			[
+				"head",
+				"headsThreshold"
+			],
+			[
+				"m_n",
+				"m_numHeads"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "TODO",
+			"settings":
+			{
+				"buffer_size": 706,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "main/main.ino",
+			"settings":
+			{
+				"buffer_size": 3766,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "main/Motor.h",
+			"settings":
+			{
+				"buffer_size": 697,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "main/Motor.c",
+			"settings":
+			{
+				"buffer_size": 5551,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Packages/User/MinGW-w64.sublime-build",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/User/MinGW-w64.sublime-build",
+					""
+				],
+				[
+					"Packages/User/MinGW-w64.sublime-build",
+					"Run"
+				]
+			],
+			[
+				"Packages/User/MinGW-w64.sublime-build",
+				"Run"
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 81.0,
+		"last_filter": "Subli",
+		"selected_items":
+		[
+			[
+				"Subli",
+				"Preferences: SublimeGDB Settings – Default"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 153.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/PigGame/main.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/CoinTosser.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/CoinTosser.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/WeightedTosser.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/WeightedTosser.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/main.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/PigGame/Player.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/PigGame/Player.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/PigGame/PigGame.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/PigGame/PigGame.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/CoinPredictor.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedCoin/CoinPredictor.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/README.md",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedTosser.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/main.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/CoinTosser.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/CoinTosser.cpp",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/CoinPredictor.h",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/CoinPredictor.cpp",
+		"/C/Users/Matt/Documents/Personal/ThoughtsAPlatformForIdeasToExplore.txt",
+		"/C/Users/Matt/Documents/Personal/Personal Style",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/SublimeGDB/SublimeGDB.sublime-settings",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/WeightedTosser.h",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/MinGW-w64.sublime-build",
+		"/C/Users/Matt/Documents/Sensors and ML/Machine-Learning/hello.cpp",
+		"/C/Users/Matt/Documents/MinGW-w64.sublime-build",
+		"/C/Users/Matt/Documents/Programing with Frazer/helloWorld.R",
+		"/C/Users/Matt/Documents/Programing with Frazer/helloWorld",
+		"/C/Users/Matt/Documents/Personal/I am a Mechatronics Engineering student at the Uni",
+		"/C/Users/Matt/Documents/Job Search Documents/Interview Prep",
+		"/C/Users/Matt/Documents/Personal/Long Term Thoughts",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"cout",
+			"Heads",
+			"COINTOSSER_H",
+			"++",
+			"()\n"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "TODO",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 706,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								458,
+								458
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "main/main.ino",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3766,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1649,
+								1902
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1494.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "main/Motor.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 697,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								542,
+								550
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": -0.0,
+						"translation.y": 337.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "main/Motor.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5551,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 27.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 167.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/User/MinGW-w64.sublime-build",
+	"project": "MTE_380_Project_Software.sublime-project",
+	"replace":
+	{
+		"height": 50.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"C:\\Users\\Matt\\Documents\\Personal\\Life-Stuff.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

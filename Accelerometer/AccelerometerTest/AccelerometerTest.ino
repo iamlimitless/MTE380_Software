@@ -1,5 +1,6 @@
 
 #define ZAXIS_REGISTER 0x02
+#define TILT_REGISTER 0x03
 #define INTERRUPT_REGISTER 0x06
 #define MODE_REGISTER 0x07
 #define AUTOWAKE_REGISTER 0x08
@@ -9,52 +10,44 @@
 #include <Wire.h>
 
 //Still need to understand auto sleep and autowake better
-
 volatile boolean readData = false;
 volatile int interruptCounter = 0;
-const int I2C_INTERRUPT_PIN = 18;
+const int I2C_INTERRUPT_PIN = 3;
 
 void setup() 
 {
 	Serial.begin(9600);
 	Wire.begin();
-	//configureAccelerometer();
-	attachInterrupt(digitalPinToInterrupt(I2C_INTERRUPT_PIN), handleI2CInterrupt, RISING);
+	configureAccelerometer();
+	attachInterrupt(digitalPinToInterrupt(I2C_INTERRUPT_PIN), handleI2CInterrupt, FALLING);
 }
 
 void configureAccelerometer()
 {
-  Serial.print("First Line in Configure");
 	writeAccelerometer(MODE_REGISTER, 0x40); //Set device into standby for register programming
-   Serial.print("Line after Write");
-
 	writeAccelerometer(INTERRUPT_REGISTER, 0x04); //Enable interupts on tap
 	writeAccelerometer(AUTOWAKE_REGISTER, 0x60); // Filter 4 matching samples (at 120hz), before updating
 	writeAccelerometer(TAP_DETECTION_REGISTER, 0x60); // Detect only in the Z axis, threshold is +-1
-	writeAccelerometer(TAP_DEBOUNCE_REGISTER, 0x00); // two tests in a row before interrupt is triggered (this is the minimum)
+	writeAccelerometer(TAP_DEBOUNCE_REGISTER, 0xFF); // 0xFF, debouncing for days 0x00 is two tests in a row before interrupt is triggered (this is the minimum), 0x80 is 128
 	//It is important to set operation mode last. See datasheet for rational
-	writeAccelerometer(MODE_REGISTER, 0xC1); //Set active mode
+	writeAccelerometer(MODE_REGISTER, 0x41); //Set active mode
 }
 
 void writeAccelerometer(byte reg, byte data)
 {
-	Wire.beginTransmission(0x98); //0x4C but should maybe be 0x98 because arduino sends the right bit.
-	Wire.write(reg);
-	Wire.write(data);
+	Wire.beginTransmission(0x4C); //Address is 0x4C shifted left 1 to add the r/w bit
+	Wire.write(reg); //0x06
+	Wire.write(data); //OxAA
 	int transmissionStatus = Wire.endTransmission(true);
-	//Error Checking Code
-	Serial.print("The trasmission status code is ");
-	Serial.println(transmissionStatus);
 }
 
 byte readAccelerometer(byte reg)
 {
-	Wire.beginTransmission(0x4C); //0x4C but should maybe be 0x98 because arduino sends the right bit.
+	Wire.beginTransmission(0x4C);
 	Wire.write(reg);
 	int restartStatus = Wire.endTransmission(false);
-	Wire.beginTransmission(0x4C);
-	byte data = Wire.read();
-	int transmissionStatus = Wire.endTransmission(true);
+  int numBytes = Wire.requestFrom(0x4C, 1, true);
+	return Wire.read();
 }
 
 void handleI2CInterrupt()
@@ -65,16 +58,14 @@ void handleI2CInterrupt()
 
 void loop() 
 {
-  /*
 	if(readData)
 	{
 		//Do some I2C stuff
-    Serial.println("Interupt Called");
-		Serial.println(readAccelerometer(ZAXIS_REGISTER));
+    Serial.println("Counter value is");
+    Serial.println(interruptCounter);
 		readData = false;
-	}*/
- writeAccelerometer(INTERRUPT_REGISTER, 0xAA);
- delay(1000);
+    Serial.println(readAccelerometer(TILT_REGISTER));
+	}
 }
 
 /*
