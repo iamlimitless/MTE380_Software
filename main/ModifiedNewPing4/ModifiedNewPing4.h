@@ -193,9 +193,9 @@ class NewPing {
 	public:
 		NewPing(uint8_t trigger_pin, uint8_t echo_pin, unsigned int max_cm_distance = MAX_SENSOR_DISTANCE);
 		unsigned int ping();
-		unsigned int modified_ping(MotorDrive* motors);
+		// unsigned int modified_ping(MotorDrive* motors);
 		unsigned long ping_cm();
-		unsigned long modified_ping_cm(MotorDrive* motors);
+		// unsigned long modified_ping_cm(MotorDrive* motors);
 		unsigned long ping_in();
 		unsigned long ping_median(uint8_t it = 5);
 		unsigned int convert_cm(unsigned int echoTime);

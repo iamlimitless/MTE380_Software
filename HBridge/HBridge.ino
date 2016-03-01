@@ -20,6 +20,7 @@ void setup()
     PORTH &= B10000111;
     attachInterrupt(digitalPinToInterrupt(RECV_PIN), handleIR, RISING);
     irrecv.enableIRIn(); // Start the receiver
+    Serial.begin(9600);
 }
 
 //Could deffinitely try tweaking the delays by an offset to compensate for function overhead (thus reducing drift caused by motors)
@@ -88,27 +89,15 @@ void loop()
     //     READ_IR = 0;
     //     bool driveMotor = GetIRValue();
     // }
-    delay(5000);
-    bool driveMotor = true;  //until we get the ir working                                                                                                                        
     
-    if(driveMotor)
+   /// delay(2000);  
+   // for(int i = 0; i < 1000; i++)
+  ///  {
+    while(1)
     {
-      /*
-        for(int i = 0; i < 500; i++)
-        {
-            driveForward(1000, 0.2, 0.2);
-        }*/
-        
-        for(int i = 0; i < 500; i++)
-        {
-            driveForward(1000, 0.30, 0);
-        }
-        
-        for(int i = 0; i < 500; i++)
-        {
-            driveForward(1000, 0, 0.30);
-        }
+          driveForward(1000, 0.75, 0.60);
     }
+ ///   }
 
     PORTH &= B10000111;
 

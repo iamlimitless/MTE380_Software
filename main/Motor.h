@@ -1,4 +1,4 @@
-#ifndef MOTOR_H
+#ifndef MOTOR_H 
 #define MOTOR_H
 
 /*
@@ -11,33 +11,17 @@ Right Motor has B1 = Pin 8, B2 = Pin 9
 extern "C" {
 #endif
 
-typedef enum MotorDirection
-{
-	forward,
-	reverse
-} MotorDirection;
-
-typedef struct MotorDrive 
-{
-	float motorADutyCycle;
-	float motorBDutyCycle;
-} MotorDrive;
-
 void SetupMotors();
-
-MotorDrive* InitMotorDrive();
-
-void UpdateMotors(MotorDrive* motor, float dutyA, float dutyB);
 
 void MotorsOff();
 
-void DriveStraight(MotorDrive* motor, MotorDirection direction);
+void DriveForward(int dutyA, int dutyB);
 
-void TurnLeft(MotorDrive* motor);
+void DriveBackward(int dutyA, int dutyB);
 
-void TurnRight(MotorDrive* motor);
+void TurnLeft(int dutyA, int dutyB);
 
-void CleanupMotorDrive(MotorDrive* motor);
+void TurnRight(int dutyA, int dutyB);
 
 #ifdef __cplusplus
 }

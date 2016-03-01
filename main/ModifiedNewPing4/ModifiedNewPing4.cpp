@@ -60,25 +60,25 @@ unsigned int NewPing::ping() {
 	return (micros() - (_max_time - _maxEchoTime) - PING_OVERHEAD); // Calculate ping time, include overhead.
 }
 
-unsigned int NewPing::modified_ping(MotorDrive* motors) {
-	if (!ping_trigger()) return NO_ECHO; // Trigger a ping, if it returns false, return NO_ECHO to the calling function.
+// unsigned int NewPing::modified_ping(MotorDrive* motors) {
+// 	if (!ping_trigger()) return NO_ECHO; // Trigger a ping, if it returns false, return NO_ECHO to the calling function.
 
-#if URM37_ENABLED == true
-	while (!(*_echoInput & _echoBit))
-	{             // Wait for the ping echo.
-		if (micros() > _max_time) return NO_ECHO;  // Stop the loop and return NO_ECHO (false) if we're beyond the set maximum distance.
-		DriveStraight(motors, forward);
-	} 
-#else
-	while (*_echoInput & _echoBit)
-	{               // Wait for the ping echo.
-		if (micros() > _max_time) return NO_ECHO; // Stop the loop and return NO_ECHO (false) if we're beyond the set maximum distance.
-		DriveStraight(motors, forward);
-	}  
-#endif
+// #if URM37_ENABLED == true
+// 	while (!(*_echoInput & _echoBit))
+// 	{             // Wait for the ping echo.
+// 		if (micros() > _max_time) return NO_ECHO;  // Stop the loop and return NO_ECHO (false) if we're beyond the set maximum distance.
+// 		DriveForward(motors);
+// 	} 
+// #else
+// 	while (*_echoInput & _echoBit)
+// 	{               // Wait for the ping echo.
+// 		if (micros() > _max_time) return NO_ECHO; // Stop the loop and return NO_ECHO (false) if we're beyond the set maximum distance.
+// 		DriveForward(motors);
+// 	}  
+// #endif
 
-	return (micros() - (_max_time - _maxEchoTime) - PING_OVERHEAD); // Calculate ping time, include overhead.
-}
+// 	return (micros() - (_max_time - _maxEchoTime) - PING_OVERHEAD); // Calculate ping time, include overhead.
+// }
 
 unsigned long NewPing::ping_cm() {
 	unsigned long echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.
@@ -89,14 +89,14 @@ unsigned long NewPing::ping_cm() {
 #endif
 }
 
-unsigned long NewPing::modified_ping_cm(MotorDrive* motors) {
-	unsigned long echoTime = NewPing::modified_ping(motors);         // Calls the ping method and returns with the ping echo distance in uS.
-#if ROUNDING_ENABLED == false
-	return (echoTime / US_ROUNDTRIP_CM);              // Call the ping method and returns the distance in centimeters (no rounding).
-#else
-	return NewPingConvert(echoTime, US_ROUNDTRIP_CM); // Convert uS to centimeters.
-#endif
-}
+// unsigned long NewPing::modified_ping_cm(MotorDrive* motors) {
+// 	unsigned long echoTime = NewPing::modified_ping(motors);         // Calls the ping method and returns with the ping echo distance in uS.
+// #if ROUNDING_ENABLED == false
+// 	return (echoTime / US_ROUNDTRIP_CM);              // Call the ping method and returns the distance in centimeters (no rounding).
+// #else
+// 	return NewPingConvert(echoTime, US_ROUNDTRIP_CM); // Convert uS to centimeters.
+// #endif
+// }
 
 unsigned long NewPing::ping_in() {
 	unsigned long echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.

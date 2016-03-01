@@ -1,15 +1,16 @@
 #include "ModifiedNewPing4\ModifiedNewPing4.h"
 #include "Motor.h"
+#include "math.h"
 #include <Servo.h>
 
 //Define is faster than global variables
 #define ULTRA_SONIC_PIN 47
 #define DISTANCE_IR_PIN A0
-#define SERVO_MOTOR_PIN A2
+#define SERVO_MOTOR_PIN 10 //PRetty sure this needs to be on a pwm pin
 
 volatile bool WAIT_FOR_INTERRUPT;
 NewPing sonar(ULTRA_SONIC_PIN, ULTRA_SONIC_PIN, 300);
-Servo servoMotor();
+Servo servoMotor;
 
 void SetupState()
 {
@@ -20,35 +21,37 @@ void SetupState()
 	WAIT_FOR_INTERRUPT = true;
 	//Set Distance IR PIN
 	pinMode(DISTANCE_IR_PIN, INPUT);
-	servoMotor.attach(SERVO_MOTOR_PIN)
+	servoMotor.attach(SERVO_MOTOR_PIN);
 }
 
-void FindRamp(MotorDrive* motors)
+void FindRamp()
 {
   unsigned long referenceDistance = sonar.ping_cm();
   unsigned long currentDistance = referenceDistance;
-  float baseSpeed = 0.30;
-  //consider precomputing this
-  float correctionFactor = 0.05; //This control is subject to change
+  int baseSpeed = 85; //33% duty cycle
+  int correctedSpeed = 95; //This control is subject to change
+  
+  DriveForward(baseSpeed, baseSpeed);
+
   while(currentDistance != 0)
   {
-    DriveStraight(motors, forward);
-    currentDistance = sonar.modified_ping_cm(motors); //This drives motors while it waits
+    currentDistance = sonar.ping_cm(); //This drives motors while it waits
     //We've drifted left
     if(currentDistance < referenceDistance)
     {
-      UpdateMotors(motors, baseSpeed+correctionFactor, baseSpeed);
+      DriveForward(correctedSpeed, baseSpeed);
     }
     //We've drifted right
     else if(currentDistance > referenceDistance)
     {
-      UpdateMotors(motors, baseSpeed, baseSpeed+correctionFactor);
+      DriveForward(baseSpeed, correctedSpeed);
     }
     else
     {
-      UpdateMotors(motors, baseSpeed, baseSpeed);
+	  DriveForward(baseSpeed, baseSpeed);
     }
   }
+  MotorsOff();
 }
 
 inline int IRMedianOfThree()
@@ -69,14 +72,14 @@ inline int IRMedianOfThree()
 		{
 			return val1;
 		}
-		else if(val3 =< val2)
+		else if(val3 <= val2)
 		{
 			return val2;
 		}
 	}
 	else
 	{
-		if(val2 =< val3)
+		if(val2 <= val3)
 		{
 			return val2;
 		}
@@ -90,23 +93,21 @@ inline int IRMedianOfThree()
 
 void IRGuidedTurn(MotorDrive* motors)
 {
-	UpdateMotors(motors, 25, 25); //arbritrary
 	int currentSensorReading = 0;
 	int previousSensorReading = 0; 
-
+	TurnLeft(65, 65); //about 25%
 	// Rate of change is increasing
 	while((currentSensorReading - previousSensorReading) >= 0)
 	{
-		TurnLeft(motors);
 		previousSensorReading = currentSensorReading;
-		currentSensorReading =  IRMedianOfThree();
+		currentSensorReading = 12.361 * pow(0.005 * IRMedianOfThree(), -1.09); //magic numbers from excel trendline 
 	}
 	while((currentSensorReading - previousSensorReading) < 0)
 	{
-		TurnLeft(motors);
 		previousSensorReading = currentSensorReading;
-		currentSensorReading =  IRMedianOfThree();
+		currentSensorReading = 12.361 * pow(0.005 * IRMedianOfThree(), -1.09); //magic numbers from excel trendline 
 	}
+	MotorsOff();
 }
 
 void UltrasonicTurn(MotorDrive* motors)
@@ -118,11 +119,12 @@ void UltrasonicTurn(MotorDrive* motors)
 	unsigned long minTolerance = referenceDistance - 5;
 	unsigned long maxTolerance = referenceDistance + 5;
 
+	TurnLeft(65, 65); //about 25%
 	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
-		TurnLeft(motors);
 		measuredDistance = sonar.ping_cm();
 	}
+	MotorsOff();
 }
 
 /*
@@ -134,32 +136,33 @@ void DriveOnFlat(MotorDrive* motors)
 {
 	PORTA |= 0x05; //Enable Proximity IR Sensors
 	char proximityData;
-	float baseSpeed = 0.30; //Tune this
-	float correctionSpeed = 0.37;
+	int baseSpeed = 85; // ~33%
+	int correctionSpeed = 95; // ~37%
 
 	//Test Counter to break the cycle
 	int counter = 0;
 
+	DriveForward(baseSpeed, baseSpeed);
+
 	while(WAIT_FOR_INTERRUPT && counter < 30000)
 	{
-		DriveStraight(motors, forward);
 		proximityData = PINA;
-		//Both Motors See Ramp
-		if((proximityData & 0x0A) == 0x0A)
+		switch((proximityData & 0x0A))
 		{
-			//Drive the MotorB harder
-			UpdateMotors(motors, baseSpeed, correctionSpeed);
+			//Both Motors See Ramp
+			case 0x0A:
+				//Drive the MotorB harder
+				DriveForward(baseSpeed, correctionSpeed);
+				break;
+			//Both Motors See Space
+			case 0x00:
+				//Drive MotorA harder
+				DriveForward(correctionSpeed, baseSpeed);
+				break;
+			default:
+				DriveForward(baseSpeed, baseSpeed);
 		}
-		//Both Motors See Space
-		else if ((proximityData & 0x0A) == 0)
-		{
-			//Drive MotorA harder
-			UpdateMotors(motors, correctionSpeed, baseSpeed);
-		}
-		else
-		{
-			UpdateMotors(motors, baseSpeed, baseSpeed);
-		}
+
 		counter++; //This is for test 
 	}
 	WAIT_FOR_INTERRUPT = true;
@@ -180,24 +183,15 @@ void setup()
 }
 
 void loop() 
-{
-	MotorDrive* motors = InitMotorDrive();
-	UpdateMotors(motors, 0.99, 0.99);
+{	
 
-	//  delay(2000);
+	 // delay(2000);
 
-	//  for(int i = 0; i<30000; i++)
-	//  {
-	while(1)
-	{
-		DriveStraight(motors, forward);
-	}
-	//  }
+	DriveForward(123, 123); //about 50%
 
 	//DriveOnFlat(motors);
 
 
-	CleanupMotorDrive(motors);
 	while(1);
 }
 

@@ -3,6 +3,15 @@
 #include <stddef.h>
 #include "Motor.h"
 
+/*
+Some motor details
+LeftMotor has A1 = Pin 6, A2 = Pin 7
+Right Motor has B1 = Pin 8, B2 = Pin 9
+*/
+#define MOTOR_A1_PIN 6
+#define MOTOR_A2_PIN 7
+#define MOTOR_B1_PIN 8
+#define MOTOR_B2_PIN 9
 
 void SetupMotors()
 {
@@ -13,155 +22,46 @@ void SetupMotors()
     */
     //Set the data direction register (DDRx) of B
     DDRH = B01111010; // This sets digital pins 9,8,7,6 to output For our motors. Tx pin 16 also output. 
-    PORTH &= B10000111;  
-}
-
-MotorDrive* InitMotorDrive()
-{
-  MotorDrive* newMotor = malloc(sizeof(MotorDrive));
-  newMotor->motorADutyCycle = 0;
-  newMotor->motorBDutyCycle = 0;
-  return newMotor;
-}
-
-inline void UpdateMotors(MotorDrive* motor, float dutyA, float dutyB)
-{
-    motor->motorADutyCycle = dutyA;
-    motor->motorBDutyCycle = dutyB;
-}
-
-void MotorsOff()
-{
-    // Clear Pins 9-6
     PORTH &= B10000111;
+    TCCR4B = (TCCR4B & 0xF8) | 0x02;
 }
 
-/*
-Can maybe consolidate code for forward, reverse, and turning by
-bitshifting bits based on the mode. Analyze the groups of bits,
-and find a pattern
-*/
-
-inline void DriveStraight(MotorDrive* motor, MotorDirection direction)
+inline void MotorsOff()
 {
-    // Clear Pins 9-6
+    analogWrite(MOTOR_A1_PIN, 0);
+    analogWrite(MOTOR_B1_PIN, 0);
+}
+
+inline void DriveForward(int dutyA, int dutyB)
+{
+    // Clear Pins 9-6 (To set enable signals)
     PORTH &= B10000111;
-    // 1000ms / (freq(in herz) / 1000) we choose a frequency of 10kHz
-    int time = 100;
-    char pulseBoth, disableA, disableB;
-
-    if(direction == forward)
-    {
-        pulseBoth = B00101000;
-        disableA = B11110111;
-        disableB = B11011111;
-    }
-    else
-    {
-        pulseBoth = B01010000;
-        disableA = B11101111;
-        disableB = B10111111;
-    }
-
-    if(motor->motorADutyCycle > motor->motorBDutyCycle)
-    {
-        unsigned int firstDelay = motor->motorBDutyCycle * time;
-        unsigned int secondDelay = (motor->motorADutyCycle * time) - firstDelay;
-        unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 8, 6 if forward, 9,7 if reverse
-        delayMicroseconds(firstDelay);
-        PORTH &= disableB; //Turn off pin 8, or 9 if reverse
-        delayMicroseconds(secondDelay);
-        PORTH &= disableA; //Turn off pin 6 or 7 if reverse
-        delayMicroseconds(timeRemaining);
-    }
-    else //PercentB >= PercentA
-    {
-        unsigned int firstDelay = motor->motorADutyCycle * time;
-        unsigned int secondDelay = (motor->motorBDutyCycle * time) - firstDelay;
-        unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 8, 6 if forward, 9,7 if reverse
-        delayMicroseconds(firstDelay);
-        PORTH &= disableA; //Turn off pin 6 or 7 if reverse
-        delayMicroseconds(secondDelay); 
-        PORTH &= disableB; //Turn off pin 8 or 9 if reverse
-        delayMicroseconds(timeRemaining);
-    }
+    analogWrite(MOTOR_A1_PIN, dutyA);
+    analogWrite(MOTOR_B1_PIN, dutyB); 
 }
 
-void TurnLeft(MotorDrive* motor)
+//Note that this is in slow decay mode which is slighty different 
+//Than forwards which is in fast decay mode
+inline void DriveBackward(int dutyA, int dutyB)
 {
-    PORTH &= B10000111;
-    // 1000ms / (freq(in herz) / 1000) we choose a frequency of 10kHz
-    int time = 100;
-    char pulseBoth = B00110000;
-    char disableA = B11101111;
-    char disableB = B11011111;
-
-    if(motor->motorADutyCycle > motor->motorBDutyCycle)
-    {
-        unsigned int firstDelay = motor->motorBDutyCycle * time;
-        unsigned int secondDelay = (motor->motorADutyCycle * time) - firstDelay;
-        unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 9, 6
-        delayMicroseconds(firstDelay);
-        PORTH &= disableB; //Turn off pin 9
-        delayMicroseconds(secondDelay);
-        PORTH &= disableA; //Turn off pin 6
-        delayMicroseconds(timeRemaining);
-    }
-    else //PercentB >= PercentA
-    {
-        unsigned int firstDelay = motor->motorADutyCycle * time;
-        unsigned int secondDelay = (motor->motorBDutyCycle * time) - firstDelay;
-        unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 9, 6
-        delayMicroseconds(firstDelay);
-        PORTH &= disableA; //Turn off pin 6
-        delayMicroseconds(secondDelay); 
-        PORTH &= disableB; //Turn off pin 8
-        delayMicroseconds(timeRemaining);
-    }
+    //Set appropriate enable signals
+    PORTH &= B11010111;
+    analogWrite(MOTOR_A1_PIN, dutyA);
+    analogWrite(MOTOR_B1_PIN, dutyB); 
 }
 
-void TurnRight(MotorDrive* motor)
+inline void TurnLeft(int dutyA, int dutyB)
 {
- PORTH &= B10000111;
-    // 1000ms / (freq(in herz) / 1000) we choose a frequency of 10kHz
-    int time = 100;
-    char pulseBoth = B01001000;
-    char disableA = B11110111;
-    char disableB = B10111111;
-
-    if(motor->motorADutyCycle > motor->motorBDutyCycle)
-    {
-        unsigned int firstDelay = motor->motorBDutyCycle * time;
-        unsigned int secondDelay = (motor->motorADutyCycle * time) - firstDelay;
-        unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 9, 6
-        delayMicroseconds(firstDelay);
-        PORTH &= disableB; //Turn off pin 9
-        delayMicroseconds(secondDelay);
-        PORTH &= disableA; //Turn off pin 6
-        delayMicroseconds(timeRemaining);
-    }
-    else //PercentB >= PercentA
-    {
-        unsigned int firstDelay = motor->motorADutyCycle * time;
-        unsigned int secondDelay = (motor->motorBDutyCycle * time) - firstDelay;
-        unsigned int timeRemaining = (time - firstDelay) - secondDelay;
-        PORTH |= pulseBoth; //Pulse on Pins 9, 6
-        delayMicroseconds(firstDelay);
-        PORTH &= disableA; //Turn off pin 6
-        delayMicroseconds(secondDelay); 
-        PORTH &= disableB; //Turn off pin 8
-        delayMicroseconds(timeRemaining);
-    }
+    //Set appropriate enable signals
+    PORTH &= B10010111;
+    analogWrite(MOTOR_A1_PIN, dutyA);
+    analogWrite(MOTOR_B1_PIN, dutyB);
 }
 
-void CleanupMotorDrive(MotorDrive* motor)
+inline void TurnRight(int dutyA, int dutyB)
 {
-    free(motor);
-    motor = NULL;
+    //Set appropriate enable signals
+    PORTH &= B11000111;
+    analogWrite(MOTOR_A1_PIN, dutyA);
+    analogWrite(MOTOR_B1_PIN, dutyB);
 }
-

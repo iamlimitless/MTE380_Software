@@ -16,8 +16,6 @@ Turning Algorithm
 
 // Do something so that we start the motors high and settle so there is no initial stalling. Is this really necessary?
 
-Change things to use the pulse generator
-
 IR Distance Sensor Controller
 	- Drive Straight Algorithm
 	- How we are weaving this in with turning
