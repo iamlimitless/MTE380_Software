@@ -13,7 +13,7 @@
 #define TAP_DETECTION_REGISTER 0x09
 #define TAP_DEBOUNCE_REGISTER 0x0A
 
-#define ULTRA_SONIC_PIN 47
+#define ULTRA_SONIC_PIN 3
 #define DISTANCE_IR_PIN A0
 #define SERVO_MOTOR_PIN 10 //Pretty sure this needs to be on a pwm pin
 #define I2C_INTERRUPT_PIN 2
@@ -182,56 +182,6 @@ inline void IRDriveStraight()
     currentDistance = IRMedianOfThree();
   }
   WAIT_FOR_INTERRUPT = true;
-  //probably going to need to drive for a bit longer
-  MotorsOff();
-}
-
-inline void FindBase()
-{
-  unsigned long referenceDistance = sonar.ping_cm();
-  unsigned long currentDistance = referenceDistance;
-  int baseSpeed = 77; // 30% duty cycle
-  int correctedSpeed = 102; // 40%
-  
-  DriveForward(baseSpeed, baseSpeed);
-
-  while((referenceDistance - currentDistance) < 8)
-  {
-    //We've drifted left
-    if(currentDistance < referenceDistance)
-    {
-      DriveForward(correctedSpeed, baseSpeed);
-    }
-    //We've drifted right
-    else if(currentDistance > referenceDistance)
-    {
-      DriveForward(baseSpeed, correctedSpeed);
-    }
-    else
-    {
-	  DriveForward(baseSpeed, baseSpeed);
-    }
-    currentDistance = sonar.ping_cm();
-  }
-  //probably going to need to drive for a bit longer
-  MotorsOff();
-}
-
-inline void UltrasonicTurn()
-{
-	// Might want a different ultrasonic to limit sight outside the bounday.Configure the ultrasonic to not see things within a certain distance.
-	unsigned long referenceDistance = DISTANCE_TO_BASE; //This value is set in Find Base (with an adjustment based on geometry)
-	servoMotor.write(0);
-	unsigned long measuredDistance = 0;
-	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
-	unsigned long maxTolerance = referenceDistance + 5;
-
-	TurnLeft(173, 82); //about 30%
-	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
-	{
-		measuredDistance = sonar.ping_cm();
-	}
-	MotorsOff();
 }
 
 
@@ -285,13 +235,172 @@ inline void DriveDownRamp()
 {
 }
 
+inline void FindBase()
+{
+  unsigned long referenceDistance = sonar.ping_cm();
+  unsigned long currentDistance = referenceDistance;
+  int baseSpeed = 77; // 30% duty cycle
+  int correctedSpeed = 102; // 40%
+  
+  DriveForward(baseSpeed, baseSpeed);
+
+  //Second condition check is to ensure we don't roll over the unsigned interger
+  while((referenceDistance - currentDistance) < 8 || (referenceDistance - currentDistance) > 3000)
+  {
+    //We've drifted left
+    if(currentDistance < referenceDistance)
+    {
+      DriveForward(correctedSpeed, baseSpeed);
+    }
+    //We've drifted right
+    else if(currentDistance > referenceDistance)
+    {
+      DriveForward(baseSpeed, correctedSpeed);
+    }
+    else
+    {
+	  DriveForward(baseSpeed, baseSpeed);
+    }
+    currentDistance = sonar.ping_cm();
+  }
+  DISTANCE_TO_BASE = currentDistance;
+  MotorsOff();
+}
+
+inline void UltrasonicTurn()
+{
+	// Might want a different ultrasonic to limit sight outside the bounday.Configure the ultrasonic to not see things within a certain distance.
+	unsigned long referenceDistance = DISTANCE_TO_BASE; //This value is set in Find Base (with an adjustment based on geometry)
+	servoMotor.write(0);
+	unsigned long measuredDistance = 0;
+	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
+	unsigned long maxTolerance = referenceDistance + 5;
+
+	TurnLeft(173, 82); //about 30%
+	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
+	{
+		measuredDistance = sonar.ping_cm();
+	}
+	DISTANCE_TO_BASE = measuredDistance;
+	MotorsOff();
+}
+
+
 inline void DriveToTarget()
 {
+	unsigned long currentDistance = DISTANCE_TO_BASE;
+	DriveForward(77, 77); //Might want this to be way faster
+	//5 here represents "Target is right infront of us initiate stop sequence"
+	while(currentDistance > 5)
+	{
+		previousDistance = currentDistance;
+		currentDistance = sonar.ping_cm();
+		if(currentDistance > previousDistance)
+		{
+			MotorsOff();
+			CorrectRightDrift(previousDistance);
+			DriveForward(77, 77); //Might want this to be way faster
+		}
+		else if(currentDistance == 0)
+		{
+			MotorsOff();
+			CorrectLeftDrift(previousDistance);
+			DriveForward(77, 77); //Might want this to be way faster
+		}
+	}
+	DriveUntilStop();
+}
+
+/*
+* Try out correcting with a drifting method (similar to the drive straight algorithms)
+*/
+inline void CorrectLeftDrift(unsigned long referenceDistance)
+{
+	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
+	unsigned long maxTolerance = referenceDistance + 5;
+	unsigned ling measuredDistance = 0;
+	TurnRight(82, 173); //about 30%
+	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
+	{
+		measuredDistance = sonar.ping_cm();
+	}
+	MotorsOff();
+}
+
+inline void CorrectRightDrift(unsigned long referenceDistance)
+{
+	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
+	unsigned long maxTolerance = referenceDistance + 5;
+	unsigned ling measuredDistance = 0;
+	TurnLeft(173, 82); //about 30%
+	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
+	{
+		measuredDistance = sonar.ping_cm();
+	}
+	MotorsOff();
+}
+
+inline void DriveUntilStop()
+{
+	for(unsigned long i = 0; i<5000; i++)
+	{
+		//do nothing
+	}
+	MotorsOff();
 }
 
 void handleI2CInterrupt()
 {
 	WAIT_FOR_INTERRUPT = false;
+}
+
+void ConstructionCheck()
+{
+	//Test Motors
+	delay(2000);
+	DriveForward(77, 77);
+	delay(2000);
+	MotorsOff();
+	delay(2000);
+
+	//Test Ultrasonic
+	unsigned long measuredDistance = 300;
+	DriveForward(77, 77);
+	while(measuredDistance > 60 || measuredDistance == 0)
+	{
+		measuredDistance = sonar.ping_cm();
+	}
+	MotorsOff();
+
+	//IR Testing
+	delay(7500);
+	PORTA |= 0x01; //Enable Proximity IR Sensors
+	char proximityData;
+
+	//Test Counter to break the cycle
+	unsigned long long counter = 0;
+	DriveForward(77, 77);
+	while(counter < 100000) //200000
+	{
+		proximityData = PINA;
+		switch((proximityData & 0x0A))
+		{
+			//Both Motors See Ramp
+		case 0x00:
+        	//Drive the MotorB harder
+        	DriveForward(0, 77);
+			break;
+		//Both Motors See Open
+		case 0x0A:
+	        //Drive MotorA harder
+	        DriveForward(77, 0);
+			break;
+		default:
+			DriveForward(77, 77);
+		}
+		counter++; //This is for test 
+	}
+	MotorsOff();
 }
 
 void setup() 

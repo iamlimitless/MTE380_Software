@@ -12,7 +12,7 @@
 //Still need to understand auto sleep and autowake better
 volatile boolean readData = false;
 volatile int interruptCounter = 0;
-const int I2C_INTERRUPT_PIN = 3;
+const int I2C_INTERRUPT_PIN = 2;
 
 void setup() 
 {
@@ -39,6 +39,7 @@ void writeAccelerometer(byte reg, byte data)
 	Wire.write(reg); //0x06
 	Wire.write(data); //OxAA
 	int transmissionStatus = Wire.endTransmission(true);
+  Serial.println(transmissionStatus);
 }
 
 byte readAccelerometer(byte reg)

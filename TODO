@@ -1,32 +1,22 @@
-//Blocked waiting for motor
-Ramp Following Algorithm
-	- Tune the controller for up the ramp
-	- Finish implementing Down the ramp and flat
 
-//Blocked waiting for motors
-//Blocked waiting on ultrasonic mount
-Drive Straight Algorithm
-	- Tune the ultrasonic values to correct Course
+Second Turn Needs Some different logic to ensure we get close to the boundaries before we start to turn.
 
-//Blocked waiting for motors
-//Blocked waiting on ultrasonic mount
-Turning Algorithm
-	- Tune IR Distance Turns
-	- Turn Ultrasonic Turns and filtering
-
-// Do something so that we start the motors high and settle so there is no initial stalling. Is this really necessary?
-
-IR Distance Sensor Controller
-	- Drive Straight Algorithm
-	- How we are weaving this in with turning
-
-Search Drift Control Algorithm
-	- Design and implement
-
-Acceleromter
-	- Tune Accelerometer interrupt
-
+// Talk with bill owen to determine what that looks like?
 Start up sequence
 	- Give this some thought
 
-Try to inline all functions
+Implement
+	- DriveUpRamp()
+	- DriveDownRamp()
+	- Second Turn Algorithm()
+
+Tests
+	- Tune the controller for up the ramp
+	- Tune the ultrasonic values to correct course
+	- Tune IR Distance Turns and filtering
+	- Tune Ultrasonic Turns and filtering
+	- Tune Accelerometer interrupt
+	- Tune and test finding base
+	- Test and Tune drive to target and correction
+
+
