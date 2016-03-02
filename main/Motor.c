@@ -13,7 +13,7 @@ Right Motor has B1 = Pin 8, B2 = Pin 9
 #define MOTOR_B1_PIN 8
 #define MOTOR_B2_PIN 9
 
-void SetupMotors()
+inline void SetupMotors()
 {
     /*
     The choice of PORTH takes away (I believe) some of the available clock pins, if we need more clock pins. 
@@ -23,11 +23,12 @@ void SetupMotors()
     //Set the data direction register (DDRx) of B
     DDRH = B01111010; // This sets digital pins 9,8,7,6 to output For our motors. Tx pin 16 also output. 
     PORTH &= B10000111;
-    TCCR4B = (TCCR4B & 0xF8) | 0x02;
+    TCCR4B = ((TCCR4B & 0xF8) | 0x02);
 }
 
 inline void MotorsOff()
 {
+    PORTH &= B10101111;
     analogWrite(MOTOR_A1_PIN, 0);
     analogWrite(MOTOR_B1_PIN, 0);
 }
@@ -35,7 +36,7 @@ inline void MotorsOff()
 inline void DriveForward(int dutyA, int dutyB)
 {
     // Clear Pins 9-6 (To set enable signals)
-    PORTH &= B10000111;
+    PORTH &= B10101111;
     analogWrite(MOTOR_A1_PIN, dutyA);
     analogWrite(MOTOR_B1_PIN, dutyB); 
 }
@@ -45,23 +46,25 @@ inline void DriveForward(int dutyA, int dutyB)
 inline void DriveBackward(int dutyA, int dutyB)
 {
     //Set appropriate enable signals
-    PORTH &= B11010111;
+    PORTH = ((PORTH & B10101111) | B01010000);
     analogWrite(MOTOR_A1_PIN, dutyA);
     analogWrite(MOTOR_B1_PIN, dutyB); 
 }
 
+//Drive motor A backwards (Duty cycles on motors are reversed going back ie 0 is max)
 inline void TurnLeft(int dutyA, int dutyB)
 {
     //Set appropriate enable signals
-    PORTH &= B10010111;
+    PORTH = ((PORTH & B10101111) | B00010000);
     analogWrite(MOTOR_A1_PIN, dutyA);
     analogWrite(MOTOR_B1_PIN, dutyB);
 }
 
+//Drive motor B  backwards (Duty cycles on motors are reversed going back ie 0 is max)
 inline void TurnRight(int dutyA, int dutyB)
 {
     //Set appropriate enable signals
-    PORTH &= B11000111;
+    PORTH = ((PORTH & B10101111) | B01000000);
     analogWrite(MOTOR_A1_PIN, dutyA);
     analogWrite(MOTOR_B1_PIN, dutyB);
 }
