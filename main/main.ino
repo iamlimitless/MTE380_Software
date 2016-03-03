@@ -15,7 +15,7 @@
 
 #define ULTRA_SONIC_PIN 3
 #define DISTANCE_IR_PIN A0
-#define SERVO_MOTOR_PIN 10 //Pretty sure this needs to be on a pwm pin
+#define SERVO_MOTOR_PIN 46 
 #define I2C_INTERRUPT_PIN 2
 
 volatile bool WAIT_FOR_INTERRUPT;
@@ -104,13 +104,14 @@ inline int IRMedianOfThree()
 	return val3;
 }
 
+
 inline void FindRamp()
 {
   unsigned long referenceDistance = sonar.ping_cm();
   unsigned long currentDistance = referenceDistance;
-  int baseSpeed = 77; // 30% duty cycle
-  int correctedSpeed = 102; // 40%
-  
+  int baseSpeed = 179; // 77 
+  int correctedSpeed = 199; // 97
+
   DriveForward(baseSpeed, baseSpeed);
 
   while(currentDistance != 0)
@@ -129,6 +130,7 @@ inline void FindRamp()
     {
 	  DriveForward(baseSpeed, baseSpeed);
     }
+    delayMicroseconds(100);  
     currentDistance = sonar.ping_cm();
   }
   //probably going to need to drive for a bit longer
@@ -289,6 +291,7 @@ inline void UltrasonicTurn()
 inline void DriveToTarget()
 {
 	unsigned long currentDistance = DISTANCE_TO_BASE;
+	unsigned long previousDistance = currentDistance;
 	DriveForward(77, 77); //Might want this to be way faster
 	//5 here represents "Target is right infront of us initiate stop sequence"
 	while(currentDistance > 5)
@@ -318,7 +321,7 @@ inline void CorrectLeftDrift(unsigned long referenceDistance)
 {
 	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
 	unsigned long maxTolerance = referenceDistance + 5;
-	unsigned ling measuredDistance = 0;
+	unsigned long measuredDistance = 0;
 	TurnRight(82, 173); //about 30%
 	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
@@ -331,7 +334,7 @@ inline void CorrectRightDrift(unsigned long referenceDistance)
 {
 	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
 	unsigned long maxTolerance = referenceDistance + 5;
-	unsigned ling measuredDistance = 0;
+	unsigned long measuredDistance = 0;
 	TurnLeft(173, 82); //about 30%
 	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
@@ -373,14 +376,14 @@ void ConstructionCheck()
 	MotorsOff();
 
 	//IR Testing
-	delay(7500);
+	delay(10000);
 	PORTA |= 0x01; //Enable Proximity IR Sensors
 	char proximityData;
 
 	//Test Counter to break the cycle
 	unsigned long long counter = 0;
 	DriveForward(77, 77);
-	while(counter < 100000) //200000
+	while(counter < 300000) //200000
 	{
 		proximityData = PINA;
 		switch((proximityData & 0x0A))
@@ -407,14 +410,23 @@ void setup()
 {
 	SetupMotors();
 	SetupState();
+  	servoMotor.write(181);
+  	Serial.begin(9600);
 }
 
 void loop() 
 {	
   delay(2000);
-  DriveOnFlat();
-  MotorsOff();
 
+  // FindRamp();
+  // MotorsOff();
+  //ConstructionCheck();
+
+	while(1)
+	{
+		Serial.println(analogRead(DISTANCE_IR_PIN));
+	}
+  
   while(1)
   {
   	volatile int x = 0;

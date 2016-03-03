@@ -28,14 +28,14 @@ void loop()
   for(int i = 0; i < 6; i++)
   {
       int sensorVal = analogRead(IR_SIGNAL_PIN);
-      delay(1000);
+      delay(500);
   }
 
   for(int j = 0; j < 10; j ++)
   {
       int sensorVal = analogRead(IR_SIGNAL_PIN);
       Serial.println(irToDistance(sensorVal));
-      delay(1000);
+      delay(500);
   }
   
   while(true)
