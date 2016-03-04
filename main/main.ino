@@ -389,13 +389,15 @@ inline void DriveToTarget()
 	while(currentDistance > 5)
 	{
 		previousDistance = currentDistance;
-		currentDistance = sonar.ping_cm();
 		delayMicroseconds(ULTRASONIC_DELAY);
+		currentDistance = sonar.ping_cm();
 		if(currentDistance > previousDistance)
 		{
 			MotorsOff();
 			CorrectRightDrift(previousDistance);
 			DriveForward(77, 77); //Might want this to be way faster
+			currentDistance = DISTANCE_TO_BASE;
+			previousDistance = previousDistance;
 		}
 		else if(currentDistance == 0)
 		{
@@ -438,6 +440,7 @@ inline void CorrectRightDrift(unsigned long referenceDistance)
 		delayMicroseconds(ULTRASONIC_DELAY);
 		measuredDistance = sonar.ping_cm();
 	}
+	DISTANCE_TO_BASE = measuredDistance;
 	MotorsOff();
 }
 
