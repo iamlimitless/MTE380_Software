@@ -6,7 +6,6 @@ Start up sequence
 	- Give this some thought
 
 Implement
-	- DriveUpRamp()
 	- DriveDownRamp()
 	- Second Turn Algorithm()
 

@@ -11,7 +11,7 @@ float voltageFromDigital(int digitalVal)
 
 double irToDistance(int digitalVal)
 {
-    return 12.361 * pow(0.005 * digitalVal, -1.09); //magic numbers from excel trendline
+    return 15.326 * pow(0.005 * digitalVal, -0.998); //magic numbers from excel trendline
 }
 
 
