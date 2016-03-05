@@ -111,8 +111,8 @@ inline void FindRamp()
 {
   unsigned long referenceDistance = sonar.ping_cm();
   unsigned long currentDistance = referenceDistance;
-  int baseSpeed = 179; // 77 
-  int correctedSpeed = 199; // 97
+  int baseSpeed = 115; // 77 
+  int correctedSpeed = 130; // 97
 
   DriveForward(baseSpeed, baseSpeed);
 
@@ -139,67 +139,66 @@ inline void FindRamp()
   MotorsOff();
 }
 
-void BubbleSort(int* array, int n)
+inline void UltrasonicTurn()
 {
-	int c;
-	int d;
-	int swap;
+	digitalWrite(SERVO_ENABLE, HIGH);
+  	servoMotor.attach(SERVO_MOTOR_PIN);
+  	servoMotor.write(87);
+  	delay(500); // Allows the servo to turn
 
-  for (c = 0 ; c < ( n - 1 ); c++)
-  {
-    for (d = 0 ; d < n - c - 1; d++)
-    {
-      if (array[d] > array[d+1]) /* For decreasing order use < */
-      {
-        swap       = array[d];
-        array[d]   = array[d+1];
-        array[d+1] = swap;
-      }
-    }
-  }
-}
+    delayMicroseconds(ULTRASONIC_DELAY);  
+    unsigned long referenceDistance = sonar.ping_cm() + 9;
 
-int MedianFilterIR(const int size)
-{
-	int array[size];
-	for(int i = 0; i < size; i++)
+  	servoMotor.write(3);
+    int minTolerance = referenceDistance - 1; 
+    int maxTolerance = referenceDistance + 1;
+    unsigned long measuredDistance = 0;
+
+	delay(500); // Allows the servo to turn
+
+	TurnLeft(197, 57); 
+    delay(450); // Lets the car start to turn before we read
+
+    while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
-		array[i] = analogRead(DISTANCE_IR_PIN);
+		delayMicroseconds(ULTRASONIC_DELAY);
+		measuredDistance = sonar.ping_cm();
 	}
-	BubbleSort(array, size);
-	return array[(size/2)+1];
-}
-
-inline void IRGuidedTurn()
-{
-	float currentSensorReading = 0; //Arbitrarily high
-	float previousSensorReading = 0; 
-	TurnLeft(158, 102); 
-	delay(250);
-
-	//We need to warm up the ir
-
-	/* The bottom while loop should not be <= if both things are uncommented */
-
-	// Rate of change is increasing
-	// while((currentSensorReading - previousSensorReading) >= 0)
-	// {
-	// 	previousSensorReading = currentSensorReading;
-	// 	currentSensorReading = 15.326 * pow(0.005 * IRMedianOfThree(), -0.998); //magic numbers from excel trendline 
-	// }
-
-	//We can consider waiting for a fixed number of cycles
-	 while((currentSensorReading - previousSensorReading) >= 0)
-	 {
-	 	previousSensorReading = currentSensorReading;
-	 	//currentSensorReading = 15.326 * pow(0.005 * MedianFilterIR(11), -0.998); //magic numbers from excel trendline 
-	 	//currentSensorReading = MedianFilterIR(21);
-    	currentSensorReading = MedianFilterIR(11);
-    	delay(50);
-	 }
+	// Probably want to set a global variable for the control distance (maybe not cause its a known part of the course)
 	MotorsOff();
 }
 
+inline void DriveToRamp()
+{
+	unsigned long referenceDistance = 32;
+	unsigned long currentDistance = referenceDistance;
+	int baseSpeed = 115; // 77 
+	int correctedSpeed = 140; // 97
+	DriveForward(baseSpeed, baseSpeed);
+
+	while(1) //WAIT_FOR_INTERUPT
+	{
+	 	//We've drifted left
+	    if(currentDistance < referenceDistance)
+	    {
+	      DriveForward(baseSpeed, correctedSpeed);
+	    }
+	    //We've drifted right
+	    else if(currentDistance > referenceDistance)
+	    {
+	      DriveForward(correctedSpeed, baseSpeed);
+	    }
+	    else
+	    {
+		  DriveForward(baseSpeed, baseSpeed);
+	    }
+	    delayMicroseconds(ULTRASONIC_DELAY);  
+	    currentDistance = sonar.ping_cm();
+	}
+	WAIT_FOR_INTERRUPT = true;
+}
+
+//Probably change this to ultrasonic drive straight
 inline void IRDriveStraight()
 {
   unsigned long referenceDistance = IRMedianOfThree();
@@ -323,13 +322,6 @@ inline void FindBase()
   
   DriveForward(baseSpeed, baseSpeed);
 
-  /*
-  Things to try 1. Comment out all logic except for the delay, and the readings and see if it eventually exits (without moving it)
-  				2. Increase the delay between readings
-  				3. Try the != 0 condition just to see if the system reacts differently
-  				4. Try just printing out the roll over case ref = 132, actual = 134, to see the result
-  */
-
   //Second condition check is to ensure we don't roll over the unsigned interger
   // while((referenceDistance - currentDistance) < 30 || (currentDistance > (referenceDistance + 5)))
   while((referenceDistance - currentDistance) < 30 || (referenceDistance - currentDistance) > 400000)
@@ -356,7 +348,7 @@ inline void FindBase()
   MotorsOff();
 }
 
-inline void UltrasonicTurn()
+inline void TurnToTarget()
 {
 	digitalWrite(SERVO_ENABLE, HIGH);
   	servoMotor.attach(SERVO_MOTOR_PIN);
@@ -369,10 +361,11 @@ inline void UltrasonicTurn()
 	unsigned long maxTolerance = referenceDistance + 5;
 
 	TurnLeft(197, 57); 
+    delay(330);
 	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
-		measuredDistance = sonar.ping_cm();
 		delayMicroseconds(ULTRASONIC_DELAY);
+		measuredDistance = sonar.ping_cm();
 	}
 	DISTANCE_TO_BASE = measuredDistance;
 	MotorsOff();
@@ -381,33 +374,45 @@ inline void UltrasonicTurn()
 
 inline void DriveToTarget()
 {
-	delay(1000);
-	unsigned long currentDistance = DISTANCE_TO_BASE;
-	unsigned long previousDistance = currentDistance;
-	DriveForward(77, 77); //Might want this to be way faster
-	//5 here represents "Target is right infront of us initiate stop sequence"
-	while(currentDistance > 5)
-	{
-		previousDistance = currentDistance;
-		delayMicroseconds(ULTRASONIC_DELAY);
-		currentDistance = sonar.ping_cm();
-		if(currentDistance > previousDistance)
-		{
-			MotorsOff();
-			CorrectRightDrift(previousDistance);
-			DriveForward(77, 77); //Might want this to be way faster
-			currentDistance = DISTANCE_TO_BASE;
-			previousDistance = previousDistance;
-		}
-		else if(currentDistance == 0)
-		{
-			MotorsOff();
-			CorrectLeftDrift(previousDistance);
-			DriveForward(77, 77); //Might want this to be way faster
-			currentDistance = DISTANCE_TO_BASE;
-			previousDistance = previousDistance;
-		}
-	}
+	servoMotor.write(3);
+	delay(500);
+
+	unsigned long referenceDistance = sonar.ping_cm();
+
+	  int baseSpeed = 128; 
+	  int correctedSpeed = 143; //should have been 143
+
+	  //Might help?
+	  while(referenceDistance == 0)
+	  {
+		TurnLeft(197, 57); 
+	  	delayMicroseconds(ULTRASONIC_DELAY);
+	  	referenceDistance = sonar.ping_cm();
+	  }
+	  
+	  unsigned long currentDistance = referenceDistance;
+	DriveForward(baseSpeed, baseSpeed); //Might want this to be way faster
+
+  while(1)
+  {
+
+    if(currentDistance < referenceDistance)
+    {
+      DriveForward(baseSpeed, correctedSpeed);
+    }
+    else if(currentDistance > referenceDistance)
+    {
+      DriveForward(correctedSpeed, baseSpeed);
+    }
+    //We've drifted right
+    else
+    {
+	  DriveForward(baseSpeed, baseSpeed);
+    }
+    delayMicroseconds(ULTRASONIC_DELAY);  
+    currentDistance = sonar.ping_cm();
+  }
+
 	DriveUntilStop();
 }
 
@@ -517,14 +522,19 @@ void setup()
 
 void loop() 
 {	
-  delay(2000);
+  	delay(2000);
 	digitalWrite(SERVO_ENABLE, HIGH);
   	servoMotor.attach(SERVO_MOTOR_PIN);
   	servoMotor.write(181);
     delay(1000);
-  FindBase();
-  UltrasonicTurn();
-  DriveToTarget();
+
+
+   FindRamp();
+   delay(2000);
+   UltrasonicTurn();
+    delay(2000);
+    DriveToRamp();
+
   MotorsOff();
   
   while(1)
