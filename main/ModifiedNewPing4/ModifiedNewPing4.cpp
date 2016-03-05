@@ -89,14 +89,14 @@ unsigned long NewPing::ping_cm() {
 #endif
 }
 
-// unsigned long NewPing::modified_ping_cm(MotorDrive* motors) {
-// 	unsigned long echoTime = NewPing::modified_ping(motors);         // Calls the ping method and returns with the ping echo distance in uS.
-// #if ROUNDING_ENABLED == false
-// 	return (echoTime / US_ROUNDTRIP_CM);              // Call the ping method and returns the distance in centimeters (no rounding).
-// #else
-// 	return NewPingConvert(echoTime, US_ROUNDTRIP_CM); // Convert uS to centimeters.
-// #endif
-// }
+unsigned long NewPing::modified_ping_cm() {
+	unsigned long echoTime = NewPing::ping_median(3);         // Calls the ping method and returns with the ping echo distance in uS.
+#if ROUNDING_ENABLED == false
+	return (echoTime / US_ROUNDTRIP_CM);              // Call the ping method and returns the distance in centimeters (no rounding).
+#else
+	return NewPingConvert(echoTime, US_ROUNDTRIP_CM); // Convert uS to centimeters.
+#endif
+}
 
 unsigned long NewPing::ping_in() {
 	unsigned long echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.

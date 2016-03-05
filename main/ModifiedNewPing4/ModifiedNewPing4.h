@@ -195,7 +195,7 @@ class NewPing {
 		unsigned int ping();
 		// unsigned int modified_ping(MotorDrive* motors);
 		unsigned long ping_cm();
-		// unsigned long modified_ping_cm(MotorDrive* motors);
+		unsigned long modified_ping_cm();
 		unsigned long ping_in();
 		unsigned long ping_median(uint8_t it = 5);
 		unsigned int convert_cm(unsigned int echoTime);
