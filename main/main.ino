@@ -22,6 +22,8 @@
 const int ULTRASONIC_DELAY = 500;
 volatile bool WAIT_FOR_INTERRUPT;
 unsigned long DISTANCE_TO_BASE;
+unsigned long DISTANCE_TO_RAMPCENTER;
+
 NewPing sonar(ULTRA_SONIC_PIN, ULTRA_SONIC_PIN, 265);
 Servo servoMotor;
 
@@ -57,6 +59,7 @@ inline void WriteAccelerometer(char reg, char data)
 	Wire.write(reg); 
 	Wire.write(data);
 	int transmissionStatus = Wire.endTransmission(true);
+  Serial.println(transmissionStatus);
 }
 
 //Note we should make sure passing a char is fine as opposed to byte
@@ -147,14 +150,15 @@ inline void UltrasonicTurn()
   	delay(500); // Allows the servo to turn
 
     delayMicroseconds(ULTRASONIC_DELAY);  
-    unsigned long referenceDistance = sonar.ping_cm() + 9;
+    DISTANCE_TO_RAMPCENTER = sonar.ping_cm() + 9;
+    unsigned long referenceDistance = 243 - DISTANCE_TO_RAMPCENTER; //240 - 9 - sonar.ping_cm();
 
-  	servoMotor.write(3);
-    int minTolerance = referenceDistance - 1; 
-    int maxTolerance = referenceDistance + 1;
+  	servoMotor.write(181);
+    int minTolerance = referenceDistance - 10; 
+    int maxTolerance = referenceDistance + 10;
     unsigned long measuredDistance = 0;
 
-	delay(500); // Allows the servo to turn
+	delay(500); // Allows the servo to turn //maybe more?
 
 	TurnLeft(197, 57); 
     delay(450); // Lets the car start to turn before we read
@@ -162,7 +166,7 @@ inline void UltrasonicTurn()
     while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
 		delayMicroseconds(ULTRASONIC_DELAY);
-		measuredDistance = sonar.ping_cm();
+		measuredDistance = sonar.ping_cm(); //ping_cm()
 	}
 	// Probably want to set a global variable for the control distance (maybe not cause its a known part of the course)
 	MotorsOff();
@@ -170,10 +174,10 @@ inline void UltrasonicTurn()
 
 inline void DriveToRamp()
 {
-	unsigned long referenceDistance = 32;
+	unsigned long referenceDistance = DISTANCE_TO_RAMPCENTER;
 	unsigned long currentDistance = referenceDistance;
-	int baseSpeed = 115; // 77 
-	int correctedSpeed = 140; // 97
+	int baseSpeed = 115;
+	int correctedSpeed = 140;
 	DriveForward(baseSpeed, baseSpeed);
 
 	while(1) //WAIT_FOR_INTERUPT
@@ -515,25 +519,27 @@ void ConstructionCheck()
 
 void setup() 
 {
+  Serial.begin(9600);
 	SetupMotors();
 	SetupState();
-	Serial.begin(9600);
 }
 
 void loop() 
 {	
-  	delay(2000);
+ 	delay(2000);
 	digitalWrite(SERVO_ENABLE, HIGH);
-  	servoMotor.attach(SERVO_MOTOR_PIN);
-  	servoMotor.write(181);
-    delay(1000);
+ 	servoMotor.attach(SERVO_MOTOR_PIN);
+ 	servoMotor.write(181);
+   delay(1000);
 
 
-   FindRamp();
+  FindRamp();
+  delay(2000);
+  UltrasonicTurn();
    delay(2000);
-   UltrasonicTurn();
-    delay(2000);
-    DriveToRamp();
+   DriveToRamp();
+
+
 
   MotorsOff();
   
