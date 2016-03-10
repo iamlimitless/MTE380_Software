@@ -29,7 +29,9 @@ boolean GLOBAL_DEBUG_FLAG = false;
 
 // brake off is 36, break on is 44
 
+volatile int TIME_INT_COUNTER = 0;
 const int ULTRASONIC_DELAY = 500;
+const int ACCEL_DELAY = 100;
 unsigned long DISTANCE_TO_BASE;
 unsigned long DISTANCE_TO_RAMPCENTER;
 
@@ -49,11 +51,30 @@ void SetupState()
 	pinMode(BRAKE_SERVO_ENABLE, OUTPUT);
 	pinMode(ACCEL_ENABLE, OUTPUT);
 	Wire.begin();
+
+	// initialize Timer1
+	cli();          // disable global interrupts
+	TCCR1A = 0;     // set entire TCCR1A register to 0
+	TCCR1B = 0;     // same for TCCR1B
+	// set compare match register to desired timer count:
+	OCR1A = 65535;
+	// turn on CTC mode:
+	TCCR1B |= (1 << WGM12);
+	// Set CS10 and CS12 bits for 1024 prescaler:
+	TCCR1B |= (1 << CS10);
+	TCCR1B |= (1 << CS12);
+	// enable timer compare interrupt:
+	TIMSK1 |= (1 << OCIE1A);
+	// enable global interrupts:
+	sei();
 }
+
 
 //NEed to explicitly clear registers since there state is saved between reprograms
 inline void SetupAccelerometer()
 {
+	digitalWrite(ACCEL_ENABLE, HIGH);
+	delay(1);
 	WriteAccelerometer(MODE_REGISTER, 0x78); //Set device into standby for register programming
 	WriteAccelerometer(SLEEP_COUNTER_REGISTER, 0xFF);
 	WriteAccelerometer(INTERRUPT_REGISTER, 0x00);
@@ -86,8 +107,45 @@ inline byte ReadAccelerometer(byte reg)
 	return Wire.read();
 }
 
+inline void DrivePastMagnetWall()
+{
+	//This code might not be needed
+	digitalWrite(US_SERVO_ENABLE, HIGH);
+	usServoMotor.attach(US_SERVO_MOTOR_PIN);
+	usServoMotor.write(181);
+	delay(500);
+
+  unsigned long referenceDistance = sonar.ping_cm();
+  unsigned long currentDistance = referenceDistance;
+  int baseSpeed = 115;
+  int correctedSpeed = 130;
+
+  DriveForward(baseSpeed, baseSpeed);
+
+  while(currentDistance < (referenceDistance + 15))
+  {
+    //We've drifted left
+    if(currentDistance < referenceDistance)
+    {
+      DriveForward(correctedSpeed, baseSpeed);
+    }
+    //We've drifted right
+    else if(currentDistance > referenceDistance)
+    {
+      DriveForward(baseSpeed, correctedSpeed);
+    }
+    else
+    {
+	  DriveForward(baseSpeed, baseSpeed);
+    }
+    delayMicroseconds(ULTRASONIC_DELAY);  
+    currentDistance = sonar.ping_cm();
+  }
+}
+
 inline void FindRamp()
 {
+  delayMicroseconds(ULTRASONIC_DELAY);  
   unsigned long referenceDistance = sonar.ping_cm();
   unsigned long currentDistance = referenceDistance;
   int baseSpeed = 115;
@@ -120,8 +178,6 @@ inline void FindRamp()
 
 inline void UltrasonicTurn()
 {
-	digitalWrite(US_SERVO_ENABLE, HIGH);
-  	usServoMotor.attach(US_SERVO_MOTOR_PIN);
   	usServoMotor.write(87);
   	delay(500); // Allows the servo to turn
 
@@ -152,7 +208,7 @@ inline void UltrasonicTurn()
     while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
 		delayMicroseconds(ULTRASONIC_DELAY);
-		measuredDistance = sonar.ping_cm(); //ping_cm()
+		measuredDistance = sonar.ping_cm();
 	}
 	// Probably want to set a global variable for the control distance (maybe not cause its a known part of the course)
 	MotorsOff();
@@ -162,14 +218,20 @@ inline void DriveToRamp()
 {
 	unsigned long referenceDistance = 210;
 	unsigned long currentDistance = referenceDistance;
-	int baseSpeed = 76; //might want to make this a bit higher (83) in order to trigger the tap interrupt before stalling the motors
-	int correctedSpeed = 127;
+	int baseSpeed = 83; //might want to make this a bit higher (83) in order to trigger the tap interrupt before stalling the motors
+	int correctedSpeed = 134;
 	DriveForward(baseSpeed, baseSpeed);
 
-	// byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	SetupAccelerometer();
+	int counter = 0;
+	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	while((accelerometerData & 0x40) == 0x40)
+	{
+		delay(ACCEL_DELAY);
+		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+	}
 
-	//while(accelerometerData < 48 || (accelerometerData & 0x40) == 0x40)
-	while(1)
+	while(accelerometerData > 58 || accelerometerData < 40)
 	{
 	 	//We've drifted left
 	    if(currentDistance > referenceDistance || currentDistance == 0)
@@ -185,52 +247,27 @@ inline void DriveToRamp()
 	    {
 		  DriveForward(baseSpeed, baseSpeed);
 	    }
-	    delayMicroseconds(ULTRASONIC_DELAY);
-	    // accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
-	    currentDistance = sonar.ping_cm();
-	}
-}
 
-/*
-Correction methods to try
-  - Constant correction. 
-  - Exponentially increasing correction
-*/
-inline void DriveOnFlat()
-{
-	PORTA |= 0x01; //Enable Proximity IR Sensors
-	char proximityData;
-	int baseSpeed = 166; //flat was 77
-	int correctionSpeed = 217; //flat was 127
+	    counter++;
+	    if(counter > 10000)
+	    {
+			digitalWrite(ACCEL_ENABLE, LOW);
+			delayMicroseconds(100);
+			SetupAccelerometer();
+			counter = 0;
+	    }
 
-	//Test Counter to break the cycle
-	unsigned long long counter = 0;
-
-	DriveForward(baseSpeed, baseSpeed);
-
-	while(WAIT_FOR_INTERRUPT && counter < 1200000) //200000
-	{
-		proximityData = PINA;
-   
-		switch((proximityData & 0x0A))
+	    delay(ACCEL_DELAY);
+	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+		while((accelerometerData & 0x40) == 0x40)
 		{
-			//Both Motors See Ramp
-			case 0x00:
-        //Drive the MotorB harder
-        DriveForward(baseSpeed, correctionSpeed);
-				break;
-			//Both Motors See Open
-			case 0x0A:
-        //Drive MotorA harder
-        DriveForward(correctionSpeed, baseSpeed);
-				break;
-			default:
-				DriveForward(baseSpeed, baseSpeed);
+			delay(ACCEL_DELAY);
+			accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		}
 
-		counter++; //This is for test 
+		delayMicroseconds(ULTRASONIC_DELAY);
+	    currentDistance = sonar.ping_cm();
 	}
-	WAIT_FOR_INTERRUPT = true;
 }
 
 inline void DriveUpRamp()
@@ -240,13 +277,84 @@ inline void DriveUpRamp()
 	int baseSpeed = 166; //flat was 77
 	int correctionSpeed = 217; //flat was 127
 
-	//Test Counter to break the cycle
-	unsigned long long counter = 0;
-
 	DriveForward(baseSpeed, baseSpeed);
 
-	// while(WAIT_FOR_INTERRUPT && counter < 1300000) //200000
-	while(counter < 1300000)
+	int counter;
+	digitalWrite(ACCEL_ENABLE, LOW);
+	delayMicroseconds(100);
+	SetupAccelerometer();
+	counter = 0;
+	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	while((accelerometerData & 0x40) == 0x40)
+	{
+		delay(ACCEL_DELAY);
+		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+	}
+
+	while(accelerometerData < 59 && accelerometerData > 10)
+	{
+		proximityData = PINA;
+   		switch((proximityData & 0x0A))
+		{
+			//Both Motors See Ramp
+		case 0x00:
+        	//Drive the MotorB harder
+        	DriveForward(baseSpeed, correctionSpeed);
+			break;
+			//Both Motors See Open
+		case 0x0A:
+        	//Drive MotorA harder
+        	DriveForward(correctionSpeed, baseSpeed);
+			break;
+		default:
+			DriveForward(baseSpeed, baseSpeed);
+		}
+
+		counter++;
+		if(counter > 10000)
+	    {
+			digitalWrite(ACCEL_ENABLE, LOW);
+			delayMicroseconds(100);
+			SetupAccelerometer();
+			counter = 0;
+	    }
+
+	    delay(ACCEL_DELAY);
+	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+		while((accelerometerData & 0x40) == 0x40)
+		{
+			delay(ACCEL_DELAY);
+			accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+		}
+	}
+	MotorsOff();
+	digitalWrite(BRAKE_SERVO_ENABLE, HIGH);
+	brakeServoMotor.attach(BRAKE_SERVO_MOTOR_PIN);
+	brakeServoMotor.write(44);
+}
+
+inline void DriveOnFlat()
+{
+	PORTA |= 0x01; //Enable Proximity IR Sensors
+	char proximityData;
+	int baseSpeed = 77;
+	int correctionSpeed = 127;
+	
+	DriveForward(baseSpeed, baseSpeed);
+
+	int counter;
+	digitalWrite(ACCEL_ENABLE, LOW);
+	delayMicroseconds(100);
+	SetupAccelerometer();
+	counter = 0;
+	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	while((accelerometerData & 0x40) == 0x40)
+	{
+		delay(ACCEL_DELAY);
+		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+	}
+
+	while(accelerometerData > 58 || accelerometerData < 40)
 	{
 		proximityData = PINA;
    
@@ -262,32 +370,52 @@ inline void DriveUpRamp()
         //Drive MotorA harder
         DriveForward(correctionSpeed, baseSpeed);
 				break;
-			default:
-				DriveForward(baseSpeed, baseSpeed);
+		default:
+			DriveForward(baseSpeed, baseSpeed);
 		}
 
-		counter++; //This is for test 
+		counter++;
+
+		if(counter > 10000)
+	    {
+			digitalWrite(ACCEL_ENABLE, LOW);
+			delayMicroseconds(100);
+			SetupAccelerometer();
+			counter = 0;
+	    }
+
+	    delay(ACCEL_DELAY);
+	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+		while((accelerometerData & 0x40) == 0x40)
+		{
+			delay(ACCEL_DELAY);
+			accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+		}
 	}
-	// WAIT_FOR_INTERRUPT = true;
 }
 
 inline void DriveDownRamp()
 {
-	digitalWrite(BRAKE_SERVO_ENABLE, HIGH);
- 	brakeServoMotor.attach(BRAKE_SERVO_MOTOR_PIN);
- 	brakeServoMotor.write(44); // 44
  	PORTA |= 0x01; //Enable Proximity IR Sensors
 	char proximityData;
 	int baseSpeed = 51; 
 	int correctionSpeed = 89;
 	
-	//Test Counter to break the cycle
-	unsigned long long counter = 0;
-	
 	DriveForward(baseSpeed, baseSpeed);
 
-	// while(WAIT_FOR_INTERRUPT) //200000
-	while(counter < 1300000)
+	int counter;
+	digitalWrite(ACCEL_ENABLE, LOW);
+	delayMicroseconds(100);
+	SetupAccelerometer();
+	counter = 0;
+	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	while((accelerometerData & 0x40) == 0x40)
+	{
+		delay(ACCEL_DELAY);
+		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+	}
+
+	while(accelerometerData > 10 && accelerometerData < 30)
 	{
 		proximityData = PINA;
    
@@ -307,7 +435,97 @@ inline void DriveDownRamp()
 			DriveForward(baseSpeed, baseSpeed);
 		}
 
-		counter++; //This is for test 
+		counter++;
+		if(counter > 10000)
+	    {
+			digitalWrite(ACCEL_ENABLE, LOW);
+			delayMicroseconds(100);
+			SetupAccelerometer();
+			counter = 0;
+	    }
+
+	    delay(ACCEL_DELAY);
+	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+		while((accelerometerData & 0x40) == 0x40)
+		{
+			delay(ACCEL_DELAY);
+			accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+		}
+	}
+}
+
+inline void StraightenAfterRamp()
+{
+	unsigned long referenceDistance = 33;
+	unsigned long currentDistance = sonar.ping_cm();
+	int baseSpeed = 83; //might want to make this a bit higher (83) in order to trigger the tap interrupt before stalling the motors
+	int correctedSpeed = 134;
+
+	DriveForward(baseSpeed, baseSpeed);
+
+	int counter = 0;
+	while(counter < 10000)
+	{
+		counter++;
+	 	//We've drifted left
+	    if(currentDistance > referenceDistance || currentDistance == 0)
+	    {
+	      DriveForward(baseSpeed, correctedSpeed);
+	    }
+	    //We've drifted right
+	    else if(currentDistance < referenceDistance)
+	    {
+	      DriveForward(correctedSpeed, baseSpeed);
+	    }
+	    else
+	    {
+		  DriveForward(baseSpeed, baseSpeed);
+	    }
+
+		delayMicroseconds(ULTRASONIC_DELAY);
+	    currentDistance = sonar.ping_cm();
+	}
+	MotorsOff();
+	usServoMotor.write(87);
+	delay(500);
+}
+
+inline void SecondTurn()
+{
+	unsigned long referenceDistance = sonar.ping_cm();
+	while(referenceDistance > 20)
+	{
+		DriveForward(83, 83);
+		delayMicroseconds(ULTRASONIC_DELAY);
+	  referenceDistance = sonar.ping_cm();
+	}
+	MotorsOff();
+	usServoMotor.write(3);
+	delay(500);
+    referenceDistance = sonar.ping_cm();
+    int minTolerance = referenceDistance - 6; 
+    int maxTolerance = referenceDistance + 6;
+    unsigned long measuredDistance = 0;
+	
+	TurnLeft(197, 63); 
+    delay(450); // Lets the car start to turn before we read
+
+    while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
+	{
+		delayMicroseconds(ULTRASONIC_DELAY);
+		measuredDistance = sonar.ping_cm();
+	}
+	MotorsOff();
+}
+
+inline void DrivePastRamp()
+{
+	DriveForward(115, 115);
+	unsigned long measuredDistance = 0;
+	while(measuredDistance == 0)
+	{
+		delayMicroseconds(ULTRASONIC_DELAY);
+		measuredDistance = sonar.ping_cm();
 	}
 }
 
@@ -348,11 +566,9 @@ inline void FindBase()
 
 inline void TurnToTarget()
 {
-	digitalWrite(US_SERVO_ENABLE, HIGH);
-  	usServoMotor.attach(US_SERVO_MOTOR_PIN);
+	usServoMotor.write(87);
 	// Might want a different ultrasonic to limit sight outside the bounday.Configure the ultrasonic to not see things within a certain distance.
 	unsigned long referenceDistance = DISTANCE_TO_BASE; //This value is set in Find Base (with an adjustment based on geometry)
-	usServoMotor.write(87);
 	delay(500);
 	unsigned long measuredDistance = 0;
 	unsigned long minTolerance = referenceDistance - 5; //We should adjust the tolerances based on our ability to turn
@@ -368,7 +584,6 @@ inline void TurnToTarget()
 	DISTANCE_TO_BASE = measuredDistance;
 	MotorsOff();
 }
-
 
 inline void DriveToTarget()
 {
@@ -430,70 +645,78 @@ void setup()
   	Serial.begin(9600);
   	//For testing only
   	pinMode(53, OUTPUT);
+
 	SetupMotors();
 	SetupState();
-  	delay(2000);
 }
 
 void TestDrive()
 {
-	digitalWrite(ACCEL_ENABLE, HIGH);
-	delay(1);
 	SetupAccelerometer();
 
 	DriveForward(83, 83);
 	byte data = ReadAccelerometer(XAXIS_REGISTER);
-	delay(110);
+	delay(ACCEL_DELAY);
 	while((data & 0x40) == 0x40)
 	{
 		data = ReadAccelerometer(XAXIS_REGISTER);
-		delay(110);
+		delay(ACCEL_DELAY);
+		CheckAccelerometerReset();
 	}
 
-	int counter = 0;
-
-	while(data > 58 || data < 40) //was 54
+	while(data > 58 || data < 40)
 	{
-		counter++;
 		data = ReadAccelerometer(XAXIS_REGISTER);
-		delay(110);
+		delay(ACCEL_DELAY);
 		while((data & 0x40) == 0x40)
 		{
 			data = ReadAccelerometer(XAXIS_REGISTER);
-			delay(110);
+			delay(ACCEL_DELAY);
+			CheckAccelerometerReset();
 		}
-
-		if(counter > 10000)
-		{
-			digitalWrite(ACCEL_ENABLE, LOW);
-			delayMicroseconds(100);
-			digitalWrite(ACCEL_ENABLE, HIGH);
-			delay(1);
-			SetupAccelerometer();
-			counter = 0;
-		}
+		CheckAccelerometerReset();
 	}
 	MotorsOff();
 }
 
+inline void CheckAccelerometerReset()
+{
+	if(TIME_INT_COUNTER > 3)
+	{
+		digitalWrite(ACCEL_ENABLE, LOW);
+		delayMicroseconds(100);
+		SetupAccelerometer();
+		TIME_INT_COUNTER = 0;
+	}
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+	TIME_INT_COUNTER++;
+}
+
 void loop() 
 {	
-   delay(2000);
-//DriveDownRamp();
-//	digitalWrite(US_SERVO_ENABLE, HIGH);
-// 	usServoMotor.attach(US_SERVO_MOTOR_PIN);
-// 	usServoMotor.write(181);
-//  	delay(500);
+	delay(2000);
 
-//    digitalWrite(BRAKE_SERVO_ENABLE, HIGH);
-//    brakeServoMotor.attach(BRAKE_SERVO_MOTOR_PIN);
-//    brakeServoMotor.write(37);
+ //  	DrivePastMagnetWall();
+ //  	FindRamp();
+ //  	UltrasonicTurn();
+ //  	DriveToRamp();
+ //  	DriveUpRamp();
+ //  	DriveOnFlat();
+ //  	DriveDownRamp();
+ //  	StraightenAfterRamp();
+ //  	SecondTurn();
+ //  	DrivePastRamp();
+ //  	FindBase();
+ //  	TurnToTarget();
+ //  	DriveToTarget();
+	// MotorsOff();
 
 
-  MotorsOff();
-  
-  while(1)
-  {
-  }
+	while(1)
+	{
+	}
 }
 
