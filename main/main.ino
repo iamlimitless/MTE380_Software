@@ -207,7 +207,7 @@ inline void UltrasonicTurn()
 
 	delay(500); // Allows the servo to turn
 
-	TurnLeft(197, 63); 
+  TurnLeft(179, 89); 
   delay(450); // Lets the car start to turn before we read
 
   while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
@@ -221,7 +221,8 @@ inline void UltrasonicTurn()
 
 inline void DriveToRamp()
 {
-	unsigned long referenceDistance = 33; //Colin changed from 210 to 33 - looking at close wall now (also switched correction logic accordingly)
+	SetupAccelerometer();
+	unsigned long referenceDistance = 33; 
 	unsigned long currentDistance = referenceDistance;
 	int baseSpeed = 83; //might want to make this a bit higher (83) in order to trigger the tap interrupt before stalling the motors
 	int correctedSpeed = 134;
@@ -263,7 +264,7 @@ inline void DriveToRamp()
 		}
 
 		delayMicroseconds(ULTRASONIC_DELAY);
-	  currentDistance = sonar.ping_cm();
+		currentDistance = sonar.ping_cm();
 	}
 }
 
@@ -271,14 +272,33 @@ inline void DriveUpRamp()
 {
 	PORTA |= 0x01; //Enable Proximity IR Sensors
 	char proximityData;
-	int baseSpeed = 166; //flat was 77
-	int correctionSpeed = 217; //flat was 127
+	int baseSpeed = 166; 
+	int correctionSpeed = 217;
 
 	DriveForward(baseSpeed, baseSpeed);
 
-  SetupAccelerometer(); //ONLY FOR TESTING - MATT&COLIN 
-  delay(ACCEL_DELAY); //ONLY FOR TESTING - MATT&COLIN
-  
+	int accelDebounceCounter = 0;
+	while(accelDebounceCounter < 5000)
+	{
+		proximityData = PINA;
+		switch((proximityData & 0x0A))
+		{
+		  //Both Sensors See Ramp
+		  case 0x00:
+	    //Drive MotorB harder
+	    DriveForward(baseSpeed, correctionSpeed);
+			  break;
+		  //Both Sensors See Open
+		  case 0x0A:
+	    //Drive MotorA harder
+	    DriveForward(correctionSpeed, baseSpeed);
+			  break;
+		  default:
+			  DriveForward(baseSpeed, baseSpeed);
+		}		
+		accelDebounceCounter++;
+	}
+
 	CheckAccelerometerReset();
 	byte accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
@@ -287,10 +307,11 @@ inline void DriveUpRamp()
 		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	}
 
-	while(accelerometerData < 62 && accelerometerData > 10) //Colin changed threshold value to 62 from 59
+	//while(accelerometerData < 62 && accelerometerData > 10)
+	while(accelerometerData > 10 || accelerometerData == 0)
 	{
 		proximityData = PINA;
-   	switch((proximityData & 0x0A))
+   		switch((proximityData & 0x0A))
 		{
 		  //Both Sensors See Ramp
 		  case 0x00:
@@ -308,8 +329,8 @@ inline void DriveUpRamp()
 
 		CheckAccelerometerReset();
 
-	  delay(ACCEL_DELAY);
-	  accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
+	  	delay(ACCEL_DELAY);
+	  	accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		while((accelerometerData & 0x40) == 0x40)
 		{
 			delay(ACCEL_DELAY);
@@ -320,14 +341,15 @@ inline void DriveUpRamp()
 	digitalWrite(BRAKE_SERVO_ENABLE, HIGH);
 	brakeServoMotor.attach(BRAKE_SERVO_MOTOR_PIN);
 	brakeServoMotor.write(44);
+	delay(1000);
 }
 
 inline void DriveOnFlat()
 {
 	PORTA |= 0x01; //Enable Proximity IR Sensors
 	char proximityData;
-	int baseSpeed = 77;
-	int correctionSpeed = 127;
+	int baseSpeed = 128;
+	int correctionSpeed = 166;
 	
 	DriveForward(baseSpeed, baseSpeed);
 
@@ -339,7 +361,7 @@ inline void DriveOnFlat()
 		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	}
 
-	while(accelerometerData > 58 || accelerometerData < 40)
+	while(accelerometerData < 15 || accelerometerData > 40)
 	{
 		proximityData = PINA;
    
@@ -369,6 +391,7 @@ inline void DriveOnFlat()
 			accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		}
 	}
+	MotorsOff();
 }
 
 inline void DriveDownRamp()
@@ -380,6 +403,28 @@ inline void DriveDownRamp()
 	
 	DriveForward(baseSpeed, baseSpeed);
 
+	int accelDebounceCounter = 0;
+	while(accelDebounceCounter < 5000)
+	{
+		proximityData = PINA;
+		switch((proximityData & 0x0A))
+		{
+		  //Both Sensors See Ramp
+		  case 0x00:
+	    //Drive MotorB harder
+	    DriveForward(baseSpeed, correctionSpeed);
+			  break;
+		  //Both Sensors See Open
+		  case 0x0A:
+	    //Drive MotorA harder
+	    DriveForward(correctionSpeed, baseSpeed);
+			  break;
+		  default:
+			  DriveForward(baseSpeed, baseSpeed);
+		}		
+		accelDebounceCounter++;
+	}
+
 	CheckAccelerometerReset();
 	byte accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
@@ -388,7 +433,7 @@ inline void DriveDownRamp()
 		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	}
 
-	while(accelerometerData > 10 && accelerometerData < 30)
+	while((accelerometerData > 5 && accelerometerData < 30) || accelerometerData == 0) //probably wrong values
 	{
 		proximityData = PINA;
    
@@ -419,7 +464,7 @@ inline void DriveDownRamp()
 		}
 	}
   MotorsOff();
-  brakeServoMotor.write(36); //Colin added this i think you forgot it
+  brakeServoMotor.write(37);
 
 }
 
@@ -564,7 +609,6 @@ inline void DriveToTarget()
 	int baseSpeed = 128; 
 	int correctedSpeed = 143; //should have been 143
 
-	//Might help? //Colin - i think we wanted to correct left not turn left
 	while(referenceDistance == 0)
 	{
 	  TurnLeft(197, 57); 
@@ -573,9 +617,9 @@ inline void DriveToTarget()
 	}
 	  
 	unsigned long currentDistance = referenceDistance;
-	DriveForward(baseSpeed, baseSpeed); //Might want this to be way faster
+	DriveForward(baseSpeed, baseSpeed);
 
-  while(1) // Colin need to figure out this condition soon
+  while(1) 
   {
     //We've drifted right
     if(currentDistance < referenceDistance)
@@ -650,7 +694,7 @@ void TestDrive()
 
 inline void CheckAccelerometerReset()
 {
-	if(TIME_INT_COUNTER > 3)
+	if(TIME_INT_COUNTER > 2)
 	{
 		digitalWrite(ACCEL_ENABLE, LOW);
 		delayMicroseconds(100);
@@ -668,17 +712,25 @@ void loop()
 {	
 	delay(2000);
 
-  //TurnLeft(179, 84); 
-  //delay(1000); // Lets the car start to turn before we read
+	// digitalWrite(BRAKE_SERVO_ENABLE, HIGH);
+	// brakeServoMotor.attach(BRAKE_SERVO_MOTOR_PIN);
+	// brakeServoMotor.write(37);
 
-  // DrivePastMagnetWall();
-  // FindRamp();
+  DrivePastMagnetWall();
+  FindRamp();
   // UltrasonicTurn();
   // DriveToRamp();
+
+  // digitalWrite(53, HIGH);
   // DriveUpRamp();
+  // digitalWrite(53, LOW);
   // DriveOnFlat();
+  // digitalWrite(53, HIGH);
   // DriveDownRamp();
+  // digitalWrite(53, LOW);
   // StraightenAfterRamp();
+  // digitalWrite(53, HIGH); 
+
   // SecondTurn();
   // DrivePastRamp();
   // FindBase();
