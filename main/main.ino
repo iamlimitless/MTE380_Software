@@ -222,8 +222,7 @@ inline void DriveToRamp()
 	int correctedSpeed = 134;
 	DriveForward(baseSpeed, baseSpeed);
 
-	SetupAccelerometer();
-	int counter = 0;
+	CheckAccelerometerReset();
 	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
@@ -248,14 +247,7 @@ inline void DriveToRamp()
 		  DriveForward(baseSpeed, baseSpeed);
 	    }
 
-	    counter++;
-	    if(counter > 10000)
-	    {
-			digitalWrite(ACCEL_ENABLE, LOW);
-			delayMicroseconds(100);
-			SetupAccelerometer();
-			counter = 0;
-	    }
+		CheckAccelerometerReset();
 
 	    delay(ACCEL_DELAY);
 	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
@@ -279,11 +271,7 @@ inline void DriveUpRamp()
 
 	DriveForward(baseSpeed, baseSpeed);
 
-	int counter;
-	digitalWrite(ACCEL_ENABLE, LOW);
-	delayMicroseconds(100);
-	SetupAccelerometer();
-	counter = 0;
+	CheckAccelerometerReset();
 	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
@@ -310,14 +298,7 @@ inline void DriveUpRamp()
 			DriveForward(baseSpeed, baseSpeed);
 		}
 
-		counter++;
-		if(counter > 10000)
-	    {
-			digitalWrite(ACCEL_ENABLE, LOW);
-			delayMicroseconds(100);
-			SetupAccelerometer();
-			counter = 0;
-	    }
+		CheckAccelerometerReset();
 
 	    delay(ACCEL_DELAY);
 	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
@@ -342,11 +323,7 @@ inline void DriveOnFlat()
 	
 	DriveForward(baseSpeed, baseSpeed);
 
-	int counter;
-	digitalWrite(ACCEL_ENABLE, LOW);
-	delayMicroseconds(100);
-	SetupAccelerometer();
-	counter = 0;
+	CheckAccelerometerReset();
 	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
@@ -374,15 +351,7 @@ inline void DriveOnFlat()
 			DriveForward(baseSpeed, baseSpeed);
 		}
 
-		counter++;
-
-		if(counter > 10000)
-	    {
-			digitalWrite(ACCEL_ENABLE, LOW);
-			delayMicroseconds(100);
-			SetupAccelerometer();
-			counter = 0;
-	    }
+		CheckAccelerometerReset();
 
 	    delay(ACCEL_DELAY);
 	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
@@ -403,11 +372,7 @@ inline void DriveDownRamp()
 	
 	DriveForward(baseSpeed, baseSpeed);
 
-	int counter;
-	digitalWrite(ACCEL_ENABLE, LOW);
-	delayMicroseconds(100);
-	SetupAccelerometer();
-	counter = 0;
+	CheckAccelerometerReset();
 	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
@@ -435,14 +400,7 @@ inline void DriveDownRamp()
 			DriveForward(baseSpeed, baseSpeed);
 		}
 
-		counter++;
-		if(counter > 10000)
-	    {
-			digitalWrite(ACCEL_ENABLE, LOW);
-			delayMicroseconds(100);
-			SetupAccelerometer();
-			counter = 0;
-	    }
+		CheckAccelerometerReset();
 
 	    delay(ACCEL_DELAY);
 	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
