@@ -73,28 +73,28 @@ void SetupState()
 //NEed to explicitly clear registers since there state is saved between reprograms
 inline void SetupAccelerometer()
 {
-	digitalWrite(ACCEL_ENABLE, HIGH);
-	delay(1);
-	WriteAccelerometer(MODE_REGISTER, 0x78); //Set device into standby for register programming
-	WriteAccelerometer(SLEEP_COUNTER_REGISTER, 0xFF);
-	WriteAccelerometer(INTERRUPT_REGISTER, 0x00);
-	//It is important to set operation mode last. See datasheet for rational
-	WriteAccelerometer(MODE_REGISTER, 0x79); //Set active mode, used to be 0x41
-	// attachInterrupt(digitalPinToInterrupt(I2C_INTERRUPT_PIN), handleI2CInterrupt, FALLING);
+	boolean errorOccured = false;
+	do
+	{
+		boolean errorOccured = false;
+		digitalWrite(ACCEL_ENABLE, HIGH);
+		delay(1);
+		errorOccured |= WriteAccelerometer(MODE_REGISTER, 0x78); //Set device into standby for register programming
+		errorOccured |= WriteAccelerometer(SLEEP_COUNTER_REGISTER, 0xFF);
+		// errorOccured |= WriteAccelerometer(INTERRUPT_REGISTER, 0x00);
+		//It is important to set operation mode last. See datasheet for rational
+		WriteAccelerometer(MODE_REGISTER, 0x79); //Set active mode, used to be 0x41
+	}
+	while(errorOccured);
 }
 
-inline void WriteAccelerometer(char reg, char data)
+inline int WriteAccelerometer(char reg, char data)
 {
 	Wire.beginTransmission(0x4C);
 	Wire.write(reg); 
 	Wire.write(data);
 	int transmissionStatus = Wire.endTransmission(true);
-	if(transmissionStatus != 0)
-	{
-		// Serial.println(transmissionStatus);
-		// Serial.println(byte(reg));
-		digitalWrite(53, HIGH);
-	} 
+	return (transmissionStatus != 0);
 }
 
 //Note we should make sure passing a char is fine as opposed to byte
@@ -116,11 +116,16 @@ inline void DrivePastMagnetWall()
 	delay(500);
 
   unsigned long referenceDistance = sonar.ping_cm();
-  unsigned long currentDistance = referenceDistance;
+   unsigned long currentDistance = referenceDistance;
   int baseSpeed = 115;
   int correctedSpeed = 130;
-
   DriveForward(baseSpeed, baseSpeed);
+
+  while(referenceDistance == 0)
+  {
+  	delayMicroseconds(ULTRASONIC_DELAY);  
+  	referenceDistance = sonar.ping_cm();
+  }
 
   while(currentDistance < (referenceDistance + 15))
   {
@@ -194,10 +199,10 @@ inline void UltrasonicTurn()
 
     delayMicroseconds(ULTRASONIC_DELAY);
     rightBoundaryDistance = sonar.ping_cm();
-    unsigned long referenceDistance = 243 - rightBoundaryDistance - 9; //240 - 9 - sonar.ping_cm();
-  	usServoMotor.write(181);
-    int minTolerance = referenceDistance - 6; 
-    int maxTolerance = referenceDistance + 6;
+    unsigned long referenceDistance = rightBoundaryDistance + 9; //240 - 9 - sonar.ping_cm();
+  	usServoMotor.write(3);
+    int minTolerance = referenceDistance - 4; //6
+    int maxTolerance = referenceDistance + 4;
     unsigned long measuredDistance = 0;
 
 	delay(500); // Allows the servo to turn
@@ -233,12 +238,12 @@ inline void DriveToRamp()
 	while(accelerometerData > 58 || accelerometerData < 40)
 	{
 	 	//We've drifted left
-	    if(currentDistance > referenceDistance || currentDistance == 0)
+	    if(currentDistance < referenceDistance || currentDistance == 0)
 	    {
 	      DriveForward(baseSpeed, correctedSpeed);
 	    }
 	    //We've drifted right
-	    else if(currentDistance < referenceDistance)
+	    else if(currentDistance > referenceDistance)
 	    {
 	      DriveForward(correctedSpeed, baseSpeed);
 	    }
@@ -657,10 +662,14 @@ void loop()
 {	
 	delay(2000);
 
- //  	DrivePastMagnetWall();
- //  	FindRamp();
- //  	UltrasonicTurn();
- //  	DriveToRamp();
+
+	TurnLeft(140, 140); 
+    delay(450); // Lets the car start to turn before we read
+
+  	// DrivePastMagnetWall();
+  	// FindRamp();
+  	// UltrasonicTurn();
+  	// DriveToRamp();
  //  	DriveUpRamp();
  //  	DriveOnFlat();
  //  	DriveDownRamp();
@@ -670,9 +679,10 @@ void loop()
  //  	FindBase();
  //  	TurnToTarget();
  //  	DriveToTarget();
-	// MotorsOff();
+	
 
 
+	MotorsOff();
 	while(1)
 	{
 	}
