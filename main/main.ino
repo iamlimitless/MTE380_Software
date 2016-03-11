@@ -116,7 +116,7 @@ inline void DrivePastMagnetWall()
 	delay(500);
 
   unsigned long referenceDistance = sonar.ping_cm();
-   unsigned long currentDistance = referenceDistance;
+  unsigned long currentDistance = referenceDistance;
   int baseSpeed = 115;
   int correctedSpeed = 130;
   DriveForward(baseSpeed, baseSpeed);
@@ -141,7 +141,7 @@ inline void DrivePastMagnetWall()
     }
     else
     {
-	  DriveForward(baseSpeed, baseSpeed);
+	    DriveForward(baseSpeed, baseSpeed);
     }
     delayMicroseconds(ULTRASONIC_DELAY);  
     currentDistance = sonar.ping_cm();
@@ -172,7 +172,7 @@ inline void FindRamp()
     }
     else
     {
-	  DriveForward(baseSpeed, baseSpeed);
+	    DriveForward(baseSpeed, baseSpeed);
     }
     delayMicroseconds(ULTRASONIC_DELAY);  
     currentDistance = sonar.ping_cm();
@@ -183,37 +183,37 @@ inline void FindRamp()
 
 inline void UltrasonicTurn()
 {
-  	usServoMotor.write(87);
-  	delay(500); // Allows the servo to turn
+  usServoMotor.write(87);
+  delay(500); // Allows the servo to turn
 
-    delayMicroseconds(ULTRASONIC_DELAY);  
-    unsigned long rightBoundaryDistance = sonar.ping_cm();
+  delayMicroseconds(ULTRASONIC_DELAY);  
+  unsigned long rightBoundaryDistance = sonar.ping_cm();
 
-    while(rightBoundaryDistance > 38)
-    {
-    	DriveForward(115, 115); // this is the base speed set in findRamp
-    	delayMicroseconds(ULTRASONIC_DELAY);
-		rightBoundaryDistance = sonar.ping_cm();
-    }
-    MotorsOff();
+  while(rightBoundaryDistance > 38)
+  {
+  	DriveForward(115, 115); // this is the base speed set in findRamp
+   	delayMicroseconds(ULTRASONIC_DELAY);
+	  rightBoundaryDistance = sonar.ping_cm();
+  }
+  MotorsOff();
 
-    delayMicroseconds(ULTRASONIC_DELAY);
-    rightBoundaryDistance = sonar.ping_cm();
-    unsigned long referenceDistance = rightBoundaryDistance + 9; //240 - 9 - sonar.ping_cm();
-  	usServoMotor.write(3);
-    int minTolerance = referenceDistance - 4; //6
-    int maxTolerance = referenceDistance + 4;
-    unsigned long measuredDistance = 0;
+  delayMicroseconds(ULTRASONIC_DELAY);
+  rightBoundaryDistance = sonar.ping_cm();
+  unsigned long referenceDistance = rightBoundaryDistance + 9; //240 - 9 - sonar.ping_cm();
+  usServoMotor.write(3);
+  int minTolerance = referenceDistance - 4; //6
+  int maxTolerance = referenceDistance + 4;
+  unsigned long measuredDistance = 0;
 
 	delay(500); // Allows the servo to turn
 
 	TurnLeft(197, 63); 
-    delay(450); // Lets the car start to turn before we read
+  delay(450); // Lets the car start to turn before we read
 
-    while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
+  while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
-		delayMicroseconds(ULTRASONIC_DELAY);
-		measuredDistance = sonar.ping_cm();
+	  delayMicroseconds(ULTRASONIC_DELAY);
+	  measuredDistance = sonar.ping_cm();
 	}
 	// Probably want to set a global variable for the control distance (maybe not cause its a known part of the course)
 	MotorsOff();
@@ -221,14 +221,14 @@ inline void UltrasonicTurn()
 
 inline void DriveToRamp()
 {
-	unsigned long referenceDistance = 210;
+	unsigned long referenceDistance = 33; //Colin changed from 210 to 33 - looking at close wall now (also switched correction logic accordingly)
 	unsigned long currentDistance = referenceDistance;
 	int baseSpeed = 83; //might want to make this a bit higher (83) in order to trigger the tap interrupt before stalling the motors
 	int correctedSpeed = 134;
 	DriveForward(baseSpeed, baseSpeed);
 
 	CheckAccelerometerReset();
-	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	byte accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
 		delay(ACCEL_DELAY);
@@ -237,25 +237,25 @@ inline void DriveToRamp()
 
 	while(accelerometerData > 58 || accelerometerData < 40)
 	{
-	 	//We've drifted left
-	    if(currentDistance < referenceDistance || currentDistance == 0)
-	    {
-	      DriveForward(baseSpeed, correctedSpeed);
-	    }
-	    //We've drifted right
-	    else if(currentDistance > referenceDistance)
-	    {
-	      DriveForward(correctedSpeed, baseSpeed);
-	    }
-	    else
-	    {
+	 	//We've drifted right
+	  if(currentDistance < referenceDistance || currentDistance == 0)
+	  {
+	    DriveForward(baseSpeed, correctedSpeed);
+	  }
+	  //We've drifted left
+	  else if(currentDistance > referenceDistance)
+	  {
+	    DriveForward(correctedSpeed, baseSpeed);
+	  }
+	  else
+	  {
 		  DriveForward(baseSpeed, baseSpeed);
-	    }
+	  }
 
 		CheckAccelerometerReset();
 
-	    delay(ACCEL_DELAY);
-	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	  delay(ACCEL_DELAY);
+	  accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		while((accelerometerData & 0x40) == 0x40)
 		{
 			delay(ACCEL_DELAY);
@@ -263,7 +263,7 @@ inline void DriveToRamp()
 		}
 
 		delayMicroseconds(ULTRASONIC_DELAY);
-	    currentDistance = sonar.ping_cm();
+	  currentDistance = sonar.ping_cm();
 	}
 }
 
@@ -276,37 +276,40 @@ inline void DriveUpRamp()
 
 	DriveForward(baseSpeed, baseSpeed);
 
+  SetupAccelerometer(); //ONLY FOR TESTING - MATT&COLIN 
+  delay(ACCEL_DELAY); //ONLY FOR TESTING - MATT&COLIN
+  
 	CheckAccelerometerReset();
-	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	byte accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
 		delay(ACCEL_DELAY);
 		accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	}
 
-	while(accelerometerData < 59 && accelerometerData > 10)
+	while(accelerometerData < 62 && accelerometerData > 10) //Colin changed threshold value to 62 from 59
 	{
 		proximityData = PINA;
-   		switch((proximityData & 0x0A))
+   	switch((proximityData & 0x0A))
 		{
-			//Both Motors See Ramp
-		case 0x00:
-        	//Drive the MotorB harder
-        	DriveForward(baseSpeed, correctionSpeed);
-			break;
-			//Both Motors See Open
-		case 0x0A:
-        	//Drive MotorA harder
-        	DriveForward(correctionSpeed, baseSpeed);
-			break;
-		default:
-			DriveForward(baseSpeed, baseSpeed);
+		  //Both Sensors See Ramp
+		  case 0x00:
+        //Drive MotorB harder
+        DriveForward(baseSpeed, correctionSpeed);
+			  break;
+		  //Both Sensors See Open
+		  case 0x0A:
+        //Drive MotorA harder
+        DriveForward(correctionSpeed, baseSpeed);
+			  break;
+		  default:
+			  DriveForward(baseSpeed, baseSpeed);
 		}
 
 		CheckAccelerometerReset();
 
-	    delay(ACCEL_DELAY);
-	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	  delay(ACCEL_DELAY);
+	  accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		while((accelerometerData & 0x40) == 0x40)
 		{
 			delay(ACCEL_DELAY);
@@ -329,7 +332,7 @@ inline void DriveOnFlat()
 	DriveForward(baseSpeed, baseSpeed);
 
 	CheckAccelerometerReset();
-	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	byte accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
 		delay(ACCEL_DELAY);
@@ -352,14 +355,14 @@ inline void DriveOnFlat()
         //Drive MotorA harder
         DriveForward(correctionSpeed, baseSpeed);
 				break;
-		default:
-			DriveForward(baseSpeed, baseSpeed);
+		  default:
+			  DriveForward(baseSpeed, baseSpeed);
 		}
 
 		CheckAccelerometerReset();
 
-	    delay(ACCEL_DELAY);
-	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	  delay(ACCEL_DELAY);
+	  accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		while((accelerometerData & 0x40) == 0x40)
 		{
 			delay(ACCEL_DELAY);
@@ -378,7 +381,7 @@ inline void DriveDownRamp()
 	DriveForward(baseSpeed, baseSpeed);
 
 	CheckAccelerometerReset();
-	byte accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	byte accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 	while((accelerometerData & 0x40) == 0x40)
 	{
 		delay(ACCEL_DELAY);
@@ -391,30 +394,33 @@ inline void DriveDownRamp()
    
 		switch((proximityData & 0x0A))
 		{
-		//Both Motors See Ramp
-		case 0x00:
-	        //Drive the MotorB harder
-	        DriveForward(baseSpeed, correctionSpeed);
-			break;
-		//Both Motors See Open
-		case 0x0A:
-	        //Drive MotorA harder
-	        DriveForward(correctionSpeed, baseSpeed);
-			break;
-		default:
-			DriveForward(baseSpeed, baseSpeed);
+		  //Both Motors See Ramp
+		  case 0x00:
+	      //Drive the MotorB harder
+	      DriveForward(baseSpeed, correctionSpeed);
+			  break;
+		  //Both Motors See Open
+		  case 0x0A:
+	      //Drive MotorA harder
+	      DriveForward(correctionSpeed, baseSpeed);
+			  break;
+		  default:
+			  DriveForward(baseSpeed, baseSpeed);
 		}
 
 		CheckAccelerometerReset();
 
-	    delay(ACCEL_DELAY);
-	    accelerometerData = ReadAccelerometer(ZAXIS_REGISTER);
+	  delay(ACCEL_DELAY);
+	  accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		while((accelerometerData & 0x40) == 0x40)
 		{
 			delay(ACCEL_DELAY);
 			accelerometerData = ReadAccelerometer(XAXIS_REGISTER);
 		}
 	}
+  MotorsOff();
+  brakeServoMotor.write(36); //Colin added this i think you forgot it
+
 }
 
 inline void StraightenAfterRamp()
@@ -431,22 +437,22 @@ inline void StraightenAfterRamp()
 	{
 		counter++;
 	 	//We've drifted left
-	    if(currentDistance > referenceDistance || currentDistance == 0)
-	    {
-	      DriveForward(baseSpeed, correctedSpeed);
-	    }
-	    //We've drifted right
-	    else if(currentDistance < referenceDistance)
-	    {
-	      DriveForward(correctedSpeed, baseSpeed);
-	    }
-	    else
-	    {
+	  if(currentDistance > referenceDistance || currentDistance == 0)
+	  {
+	    DriveForward(baseSpeed, correctedSpeed);
+	  }
+	  //We've drifted right
+	  else if(currentDistance < referenceDistance)
+	  {
+	    DriveForward(correctedSpeed, baseSpeed);
+	  }
+	  else
+	  {
 		  DriveForward(baseSpeed, baseSpeed);
-	    }
+	  }
 
 		delayMicroseconds(ULTRASONIC_DELAY);
-	    currentDistance = sonar.ping_cm();
+	  currentDistance = sonar.ping_cm();
 	}
 	MotorsOff();
 	usServoMotor.write(87);
@@ -465,15 +471,15 @@ inline void SecondTurn()
 	MotorsOff();
 	usServoMotor.write(3);
 	delay(500);
-    referenceDistance = sonar.ping_cm();
-    int minTolerance = referenceDistance - 6; 
-    int maxTolerance = referenceDistance + 6;
-    unsigned long measuredDistance = 0;
+  referenceDistance = sonar.ping_cm();
+  int minTolerance = referenceDistance - 6; 
+  int maxTolerance = referenceDistance + 6;
+  unsigned long measuredDistance = 0;
 	
 	TurnLeft(197, 63); 
-    delay(450); // Lets the car start to turn before we read
+  delay(450); // Lets the car start to turn before we read
 
-    while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
+  while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
 		delayMicroseconds(ULTRASONIC_DELAY);
 		measuredDistance = sonar.ping_cm();
@@ -517,7 +523,7 @@ inline void FindBase()
     }
     else
     {
-	  DriveForward(baseSpeed, baseSpeed);
+	    DriveForward(baseSpeed, baseSpeed);
     }
     delayMicroseconds(ULTRASONIC_DELAY);  
     currentDistance = sonar.ping_cm();
@@ -538,7 +544,7 @@ inline void TurnToTarget()
 	unsigned long maxTolerance = referenceDistance + 5;
 
 	TurnLeft(197, 57); 
-    delay(330);
+  delay(330);
 	while(measuredDistance < minTolerance || measuredDistance > maxTolerance)
 	{
 		delayMicroseconds(ULTRASONIC_DELAY);
@@ -555,35 +561,35 @@ inline void DriveToTarget()
 
 	unsigned long referenceDistance = sonar.ping_cm();
 
-	  int baseSpeed = 128; 
-	  int correctedSpeed = 143; //should have been 143
+	int baseSpeed = 128; 
+	int correctedSpeed = 143; //should have been 143
 
-	  //Might help?
-	  while(referenceDistance == 0)
-	  {
-		TurnLeft(197, 57); 
-	  	delayMicroseconds(ULTRASONIC_DELAY);
-	  	referenceDistance = sonar.ping_cm();
-	  }
+	//Might help? //Colin - i think we wanted to correct left not turn left
+	while(referenceDistance == 0)
+	{
+	  TurnLeft(197, 57); 
+	  delayMicroseconds(ULTRASONIC_DELAY);
+	  referenceDistance = sonar.ping_cm();
+	}
 	  
-	  unsigned long currentDistance = referenceDistance;
+	unsigned long currentDistance = referenceDistance;
 	DriveForward(baseSpeed, baseSpeed); //Might want this to be way faster
 
-  while(1)
+  while(1) // Colin need to figure out this condition soon
   {
-
+    //We've drifted right
     if(currentDistance < referenceDistance)
     {
       DriveForward(baseSpeed, correctedSpeed);
     }
+    //We've drifted left
     else if(currentDistance > referenceDistance)
     {
       DriveForward(correctedSpeed, baseSpeed);
     }
-    //We've drifted right
     else
     {
-	  DriveForward(baseSpeed, baseSpeed);
+	    DriveForward(baseSpeed, baseSpeed);
     }
     delayMicroseconds(ULTRASONIC_DELAY);  
     currentDistance = sonar.ping_cm();
@@ -662,25 +668,22 @@ void loop()
 {	
 	delay(2000);
 
+  //TurnLeft(179, 84); 
+  //delay(1000); // Lets the car start to turn before we read
 
-	TurnLeft(140, 140); 
-    delay(450); // Lets the car start to turn before we read
-
-  	// DrivePastMagnetWall();
-  	// FindRamp();
-  	// UltrasonicTurn();
-  	// DriveToRamp();
- //  	DriveUpRamp();
- //  	DriveOnFlat();
- //  	DriveDownRamp();
- //  	StraightenAfterRamp();
- //  	SecondTurn();
- //  	DrivePastRamp();
- //  	FindBase();
- //  	TurnToTarget();
- //  	DriveToTarget();
-	
-
+  // DrivePastMagnetWall();
+  // FindRamp();
+  // UltrasonicTurn();
+  // DriveToRamp();
+  // DriveUpRamp();
+  // DriveOnFlat();
+  // DriveDownRamp();
+  // StraightenAfterRamp();
+  // SecondTurn();
+  // DrivePastRamp();
+  // FindBase();
+  // TurnToTarget();
+  // DriveToTarget();
 
 	MotorsOff();
 	while(1)
