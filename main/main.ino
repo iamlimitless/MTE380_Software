@@ -3,6 +3,7 @@
 #include "math.h"
 #include <Wire.h>
 #include <Servo.h>
+#include <MPU6050.h>
 
 //Accelerometer Register
 #define XAXIS_REGISTER 0x00
@@ -20,18 +21,14 @@
 #define DISTANCE_IR_PIN A0
 #define US_SERVO_MOTOR_PIN 46 
 #define US_SERVO_ENABLE 4
-#define ACCEL_ENABLE 12
 #define BRAKE_SERVO_MOTOR_PIN 44 
 #define BRAKE_SERVO_ENABLE 5
 #define I2C_INTERRUPT_PIN 2
 
-boolean GLOBAL_DEBUG_FLAG = false;
-
 // brake off is 36, break on is 44
 
-volatile int TIME_INT_COUNTER = 0;
-const int ULTRASONIC_DELAY = 500;
-const int ACCEL_DELAY = 100;
+const int ULTRASONIC_DELAY = 500; //us
+const int ACCEL_DELAY = 5; //ms
 unsigned long DISTANCE_TO_WOODWALL;
 unsigned long DISTANCE_TO_BASE;
 unsigned long DISTANCE_TO_RAMPCENTER;
@@ -59,8 +56,8 @@ void SetupState()
 	pinMode(DISTANCE_IR_PIN, INPUT);
 	pinMode(US_SERVO_ENABLE, OUTPUT);
 	pinMode(BRAKE_SERVO_ENABLE, OUTPUT);
-	pinMode(ACCEL_ENABLE, OUTPUT);
 	Wire.begin();
+	IMU.initialize();
 }
 
 inline void DrivePastMagnetWall()
@@ -165,9 +162,8 @@ inline void DriveToRamp()
 	int correctedSpeed = 153; //Maybe we are seeing the wheel slip because it is too high try 115 (45%)
 	DriveForward(baseSpeed, baseSpeed);
 
-	
-	// while(accelerometerData > 56 || accelerometerData < 40)
-	while(1)
+	double accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
+	while(accelerometerData > -0.35)
 	{
 	 	//We've drifted right
 	  if(currentDistance < referenceDistance || currentDistance == 0)
@@ -183,7 +179,9 @@ inline void DriveToRamp()
 	  {
 		  DriveForward(baseSpeed, baseSpeed);
 	  }
-
+		accelerometerData =  twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
+	  	//delay(ACCEL_DELAY); // see if we actually need this to trigger
+	  	//What should the delay be?
 		delayMicroseconds(ULTRASONIC_DELAY);
 		currentDistance = sonar.ping_cm();
 	}
@@ -202,10 +200,8 @@ inline void DriveUpRamp()
 	DriveForward(baseSpeed, baseSpeed);
 
 	//Consider an accelerometer debounce period
-
-	//while(accelerometerData < 62 && accelerometerData > 10)
-	// while(accelerometerData > 10 || accelerometerData == 0)
-	while(1)
+	double accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
+	while(accelerometerData < -0.15)
 	{
 		proximityData = PINA;
    		switch((proximityData & 0x0A))
@@ -223,6 +219,7 @@ inline void DriveUpRamp()
 		  default:
 			  DriveForward(baseSpeed, baseSpeed);
 		}
+		accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
 	}
 	MotorsOff();
 	digitalWrite(BRAKE_SERVO_ENABLE, HIGH);
@@ -240,8 +237,8 @@ inline void DriveOnFlat()
 	
 	DriveForward(baseSpeed, baseSpeed);
 
-	// while(accelerometerData < 15 || accelerometerData > 40)
-	while(1)
+	double accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
+	while(accelerometerData < 0.3)
 	{
 		proximityData = PINA;
    
@@ -260,6 +257,7 @@ inline void DriveOnFlat()
 		default:
 			  DriveForward(baseSpeed, baseSpeed);
 		}
+		accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
 	}
 	MotorsOff();
 }
@@ -274,9 +272,8 @@ inline void DriveDownRamp()
 	DriveForward(baseSpeed, baseSpeed);
 
 	//Consider an accelerometer debounce period
-
-	// while((accelerometerData > 5 && accelerometerData < 30) || accelerometerData == 0) //probably wrong values
-	while(1)
+	double accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
+	while(accelerometerData > 0.20)
 	{
 		proximityData = PINA;
    
@@ -295,6 +292,7 @@ inline void DriveDownRamp()
 		  default:
 			  DriveForward(baseSpeed, baseSpeed);
 		}
+		double accelerometerData = twosToDec(IMU.MPU6050::getRotationY()) / 16384.0;
 	}
   MotorsOff();
   brakeServoMotor.write(37);
@@ -315,7 +313,7 @@ inline void StraightenAfterRamp()
 	DriveForward(baseSpeed, baseSpeed);
 
 	int counter = 0;
-	while(counter < 190)
+	while(counter < 200)
 	{
 		counter++;
 	 	//We've drifted left
@@ -486,16 +484,16 @@ void setup()
 	SetupState();
 }
 
-//Consider changing the deg/s to something larger than 250deg/s setFullScaleGyroRange(MPU6050_GYRO_FS_500) //or 1000 or 2000
 inline void Turn90Left()
 {
-	float totalDegrees = 0;
+	double totalDegrees = 0;
 	TurnLeft(179, 102);
-	while(totalDegrees < 90)
+	while(totalDegrees < 80)
 	{
 		totalDegrees += (twosToDec(IMU.getRotationZ()) / 131.0) * 0.01; // could optimize this to 0.01/131.0
     	delay(10);
 	}
+  MotorsOff();
 }
 
 //Make sure to rip out debug code (serial prints, and led stuff before the comp)
